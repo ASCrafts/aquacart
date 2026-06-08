@@ -113,10 +113,9 @@ export function ProductCard({ product }: ProductCardProps) {
               {product.description}
             </p>
 
-            {/* Price & Add to Cart */}
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-aq-outline-variant/10">
               <span className="text-lg font-extrabold text-aq-primary tracking-tight">
-                ${product.price.toFixed(2)}
+                ₹{product.price.toFixed(2)}
               </span>
 
               <button

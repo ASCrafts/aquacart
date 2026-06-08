@@ -161,9 +161,8 @@ export default function ProductDetailPage() {
                 {product.availability ? 'In Stock' : 'Out of Stock'}
               </span>
             </div>
-
             <p className="text-3xl font-extrabold text-aq-primary mt-5 tracking-tight">
-              ${product.price.toFixed(2)}
+              ₹{product.price.toFixed(2)}
               <span className="text-sm font-medium text-aq-on-surface-variant ml-1">/ piece</span>
             </p>
 

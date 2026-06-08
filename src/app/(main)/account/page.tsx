@@ -1,6 +1,7 @@
 import AddressManager from "@/components/account/AddressManager";
 import OrderHistory from "@/components/account/OrderHistory";
 import ProfileEditor from "@/components/account/ProfileEditor";
+import EmailEditor from "@/components/account/EmailEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -48,7 +49,10 @@ export default async function AccountPage() {
               <p className="text-xs text-aq-outline mt-1">{user.phone}</p>
             )}
           </div>
-          <ProfileEditor defaultValues={{ name: user.name || '', phone: user.phone || '' }} />
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            <ProfileEditor defaultValues={{ name: user.name || '', phone: user.phone || '' }} />
+            <EmailEditor currentEmail={user.email} />
+          </div>
         </div>
 
         {/* Tabs */}
@@ -70,7 +74,7 @@ export default async function AccountPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="orders" className="mt-4">
-            <OrderHistory orders={orders} />
+            <OrderHistory />
           </TabsContent>
           <TabsContent value="addresses" className="mt-4">
             <AddressManager initialAddresses={user.addresses} />

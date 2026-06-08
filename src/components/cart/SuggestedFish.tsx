@@ -126,7 +126,7 @@ export default function SuggestedFish() {
               </Link>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-sm font-extrabold text-aq-primary">
-                  ${product.price.toFixed(2)}
+                  ₹{product.price.toFixed(2)}
                 </span>
                 <button
                   onClick={() => handleQuickAdd(product)}

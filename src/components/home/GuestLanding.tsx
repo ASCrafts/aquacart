@@ -17,7 +17,7 @@ const features = [
   {
     icon: Truck,
     title: 'Free Delivery',
-    desc: 'On orders above $50 — delivered same-day with temperature-controlled packaging.',
+    desc: 'On orders above ₹1000 — delivered same-day with temperature-controlled packaging.',
     color: 'bg-amber-50 text-amber-600',
   },
 ];

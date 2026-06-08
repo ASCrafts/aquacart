@@ -1,8 +1,19 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Fix for querySrv ECONNREFUSED on local systems where standard DNS doesn't resolve SRV records
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+  console.warn('Failed to set custom DNS servers:', err);
+}
+
 require('dotenv').config();
 
 async function run() {
-  await mongoose.connect(process.env.MONGODB_URI);
+  // Strip trailing quote if present in environment variable
+  const uri = process.env.MONGODB_URI ? process.env.MONGODB_URI.replace(/"$/, '') : '';
+  await mongoose.connect(uri);
   console.log('Connected to MongoDB');
   
   const Product = mongoose.connection.collection('products');

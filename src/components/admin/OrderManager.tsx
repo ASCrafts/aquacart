@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -70,6 +71,7 @@ export default function OrderManager() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
+  const [activeTab, setActiveTab] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('');
   const [filterOrderStatus, setFilterOrderStatus] = useState('');
   const [filterEmail, setFilterEmail] = useState('');
@@ -91,8 +93,16 @@ export default function OrderManager() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '10' });
-      if (filterPaymentStatus) params.set('paymentStatus', filterPaymentStatus);
-      if (filterOrderStatus) params.set('orderStatus', filterOrderStatus);
+      
+      if (activeTab === 'refunds') {
+        params.set('refundStatus', 'Requested');
+      } else if (activeTab === 'cancelled') {
+        params.set('orderStatus', ORDER_STATUS.CANCELLED);
+      } else {
+        if (filterPaymentStatus && filterPaymentStatus !== 'all') params.set('paymentStatus', filterPaymentStatus);
+        if (filterOrderStatus && filterOrderStatus !== 'all') params.set('orderStatus', filterOrderStatus);
+      }
+
       if (filterEmail) params.set('email', filterEmail);
       if (filterOrderId) params.set('orderId', filterOrderId);
       if (filterDateFrom) params.set('dateFrom', filterDateFrom);
@@ -108,7 +118,7 @@ export default function OrderManager() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterPaymentStatus, filterOrderStatus, filterEmail, filterOrderId, filterDateFrom, filterDateTo, toast]);
+  }, [activeTab, filterPaymentStatus, filterOrderStatus, filterEmail, filterOrderId, filterDateFrom, filterDateTo, toast]);
 
   useEffect(() => {
     fetchOrders(1);
@@ -201,6 +211,14 @@ export default function OrderManager() {
       </CardHeader>
 
       <CardContent>
+        <Tabs defaultValue="all" value={activeTab} onValueChange={(v) => { setActiveTab(v); setPagination(p => ({...p, page: 1})); }}>
+          <TabsList className="mb-6 grid w-full md:w-fit grid-cols-3">
+            <TabsTrigger value="all">All Orders</TabsTrigger>
+            <TabsTrigger value="refunds">Refund Requests</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled Orders</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* ── Filter Bar ── */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 p-4 bg-muted/50 rounded-lg">
           <div className="flex flex-col gap-1">
@@ -243,7 +261,7 @@ export default function OrderManager() {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Status</label>
-            <Select value={filterOrderStatus} onValueChange={setFilterOrderStatus}>
+            <Select value={filterOrderStatus} onValueChange={setFilterOrderStatus} disabled={activeTab === 'cancelled'}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>

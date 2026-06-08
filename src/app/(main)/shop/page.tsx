@@ -4,21 +4,50 @@ import ProductModel, { SerializedProduct } from '@/models/Product';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
 
-async function getProducts() {
+async function getProducts(search?: string, category?: string) {
   await dbConnect();
-  const products = await ProductModel.find({}).sort({ createdAt: -1 }).lean();
+  const query: any = {};
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+      { category: { $regex: search, $options: 'i' } },
+    ];
+  }
+  if (category && category !== 'all') {
+    query.category = category;
+  }
+  const products = await ProductModel.find(query).sort({ createdAt: -1 }).lean();
   return JSON.parse(JSON.stringify(products)) as SerializedProduct[];
 }
 
-export default async function ShopPage() {
+async function getCategories() {
+  await dbConnect();
+  const categories = await ProductModel.distinct('category');
+  return categories.filter(Boolean) as string[];
+}
+
+type SearchParams = Promise<{
+  search?: string;
+  category?: string;
+}>;
+
+interface ShopPageProps {
+  searchParams: SearchParams;
+}
+
+export default async function ShopPage({ searchParams }: ShopPageProps) {
   const session = await auth();
   if (!session) redirect('/login');
 
-  const products = await getProducts();
+  const resolvedParams = await searchParams;
+  const search = resolvedParams.search;
+  const category = resolvedParams.category;
 
-  // Get unique categories
-  const categories = [...new Set(products.map((p) => p.category))];
+  const products = await getProducts(search, category);
+  const categories = await getCategories();
 
   return (
     <div className="bg-aq-surface min-h-screen">
@@ -32,14 +61,17 @@ export default async function ShopPage() {
             Premium quality aquatic products, delivered right to your door.
           </p>
           {/* Search bar */}
-          <div className="relative max-w-md mx-auto">
+          <form action="/shop" method="GET" className="relative max-w-md mx-auto">
+            {category && <input type="hidden" name="category" value={category} />}
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-aq-outline" />
             <input
               type="text"
+              name="search"
               placeholder="Search seafood..."
+              defaultValue={search || ''}
               className="w-full h-12 pl-12 pr-4 rounded-full bg-white/95 shadow-aq-lg text-sm text-aq-on-surface placeholder:text-aq-outline focus:outline-none focus:ring-2 focus:ring-white/30"
             />
-          </div>
+          </form>
         </div>
       </section>
 
@@ -47,16 +79,28 @@ export default async function ShopPage() {
         {/* Category filter chips */}
         {categories.length > 0 && (
           <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-4 mb-2" id="category-filters">
-            <span className="aq-badge bg-aq-primary text-white px-4 py-1.5 text-xs shrink-0 cursor-pointer">
+            <Link
+              href={`/shop${search ? `?search=${encodeURIComponent(search)}` : ''}`}
+              className={`aq-badge px-4 py-1.5 text-xs shrink-0 cursor-pointer shadow-aq-sm transition-colors duration-200 ${
+                !category || category === 'all'
+                  ? 'bg-aq-primary text-white font-semibold'
+                  : 'bg-aq-surface-container-lowest text-aq-on-surface-variant hover:bg-aq-primary-fixed hover:text-aq-primary'
+              }`}
+            >
               All
-            </span>
+            </Link>
             {categories.map((cat) => (
-              <span
+              <Link
                 key={cat}
-                className="aq-badge bg-aq-surface-container-lowest text-aq-on-surface-variant px-4 py-1.5 text-xs shrink-0 cursor-pointer hover:bg-aq-primary-fixed hover:text-aq-primary transition-colors duration-200 shadow-aq-sm"
+                href={`/shop?category=${encodeURIComponent(cat)}${search ? `&search=${encodeURIComponent(search)}` : ''}`}
+                className={`aq-badge px-4 py-1.5 text-xs shrink-0 cursor-pointer shadow-aq-sm transition-colors duration-200 ${
+                  category === cat
+                    ? 'bg-aq-primary text-white font-semibold'
+                    : 'bg-aq-surface-container-lowest text-aq-on-surface-variant hover:bg-aq-primary-fixed hover:text-aq-primary'
+                }`}
               >
                 {cat}
-              </span>
+              </Link>
             ))}
           </div>
         )}
@@ -68,8 +112,16 @@ export default async function ShopPage() {
               <SlidersHorizontal className="w-8 h-8 text-aq-outline" />
             </div>
             <p className="text-aq-on-surface-variant font-medium">
-              No products found. Please check back later.
+              {search || category ? 'No products match your search or filters.' : 'No products found. Please check back later.'}
             </p>
+            {(search || category) && (
+              <Link
+                href="/shop"
+                className="inline-block mt-4 text-sm font-semibold text-aq-primary hover:underline"
+              >
+                Clear Filters & Search
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:gap-6" id="products-grid">

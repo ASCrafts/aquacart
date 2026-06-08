@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       receipt: newOrder._id.toString(),
       notes: {
         orderId: newOrder._id.toString(),
-        userId: user._id.toString(),
+        userId: (user as any)._id.toString(),
       },
     });
 

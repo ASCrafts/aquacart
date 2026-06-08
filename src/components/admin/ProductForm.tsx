@@ -318,7 +318,7 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                   <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Price / Piece</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">₹</span>
                       <Input
                         type="number"
                         step="0.01"
@@ -341,7 +341,7 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                   <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Price / Kg</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">₹</span>
                       <Input
                         type="number"
                         step="0.01"

@@ -20,6 +20,7 @@ export async function GET(request: Request) {
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
   const paymentStatus = searchParams.get('paymentStatus');
   const orderStatus = searchParams.get('orderStatus');
+  const refundStatus = searchParams.get('refundStatus');
   const email = searchParams.get('email');
   const orderId = searchParams.get('orderId');
   const dateFrom = searchParams.get('dateFrom');
@@ -31,6 +32,7 @@ export async function GET(request: Request) {
 
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (orderStatus) filter.orderStatus = orderStatus;
+    if (refundStatus) filter.refundStatus = refundStatus;
     if (email) filter.customerEmail = { $regex: email, $options: 'i' };
     if (orderId) {
       // Search by partial order ID (last 6-8 chars)

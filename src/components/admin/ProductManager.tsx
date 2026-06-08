@@ -218,8 +218,8 @@ export default function ProductManager() {
                 <TableRow key={product._id as string}>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
-                    <TableCell className="text-right">
-                    ${product.price.toFixed(2)}
+                    <TableCell className="text-right font-semibold">
+                    ₹{product.price.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground font-semibold">
                       {product.quantity}

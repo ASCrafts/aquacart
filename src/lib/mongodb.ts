@@ -1,4 +1,12 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+// Fix for querySrv ECONNREFUSED on local systems where standard DNS doesn't resolve SRV records
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+  console.warn('Failed to set custom DNS servers:', err);
+}
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

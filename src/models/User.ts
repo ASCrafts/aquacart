@@ -52,6 +52,9 @@ const UserSchema = new Schema({
   emailVerificationTokenExpiry: { type: Date },
   resetPasswordToken: { type: String },
   resetPasswordTokenExpiry: { type: Date },
+  tempEmail: { type: String },
+  tempEmailVerificationToken: { type: String },
+  tempEmailVerificationTokenExpiry: { type: Date },
   addresses: [AddressSchema],
   cart: {
     items: [CartItemSchema],
@@ -85,6 +88,9 @@ export interface IUser extends Document {
   emailVerificationTokenExpiry?: Date;
   resetPasswordToken?: string;
   resetPasswordTokenExpiry?: Date;
+  tempEmail?: string;
+  tempEmailVerificationToken?: string;
+  tempEmailVerificationTokenExpiry?: Date;
   addresses: IAddress[];
   cart: {
     items: ICartItem[];

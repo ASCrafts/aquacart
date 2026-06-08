@@ -11,7 +11,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Bell, CheckCircle, Circle, Loader2 } from 'lucide-react';
-import OrderManager from './OrderManager';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 type OrderNotification = {
   orderId: string;
@@ -150,9 +151,21 @@ export default function AdminDashboard() {
       </CardContent>
     </Card>
 
-    {/* Order Management */}
+    {/* Order Management Link */}
     <div className="mt-6">
-      <OrderManager />
+      <Card>
+        <CardHeader>
+          <CardTitle>Order Management</CardTitle>
+          <CardDescription>
+            View and manage all customer orders, refunds, and cancellations in the dedicated order management portal.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/admin/orders">Go to Order Management</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
     </>
   );
