@@ -32,6 +32,37 @@ export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAllProducts = async () => {
+      try {
+        const res = await fetch('/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          setAllProducts(data);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+    if (isSearchOpen && allProducts.length === 0) {
+      fetchAllProducts();
+    }
+  }, [isSearchOpen, allProducts.length]);
+
+  useEffect(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      const filtered = allProducts
+        .filter((p) => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
+        .slice(0, 5);
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery, allProducts]);
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' });
@@ -57,6 +88,7 @@ export default function Header() {
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      router.refresh();
       setIsSearchOpen(false);
       setSearchQuery('');
     }
@@ -128,20 +160,68 @@ export default function Header() {
         <div className="flex-1" />
 
         {/* Search (Desktop) */}
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center relative">
           {isSearchOpen ? (
             <div className="flex items-center gap-2 animate-scale-in">
-              <input
-                type="text"
-                placeholder="Search fresh seafood..."
-                className="aq-input h-9 w-64 px-4 text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearch}
-                autoFocus
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search fresh seafood..."
+                  className="aq-input h-9 w-64 px-4 text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
+                  autoFocus
+                />
+                {/* Suggestions Dropdown */}
+                {suggestions.length > 0 && (
+                  <div className="absolute top-11 right-0 w-80 bg-white border border-aq-outline-variant/20 rounded-2xl shadow-aq-lg overflow-hidden z-50 animate-scale-in p-1.5 flex flex-col gap-1">
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-aq-outline uppercase tracking-wider">
+                      Matching Seafood
+                    </div>
+                    {suggestions.map((product) => (
+                      <Link
+                        key={product._id}
+                        href={`/shop/${product.slug}`}
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          setSearchQuery('');
+                          setSuggestions([]);
+                        }}
+                        className="flex items-center gap-3 p-2 rounded-xl hover:bg-aq-surface-container transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-aq-surface-container-high relative">
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-aq-on-surface truncate">
+                            {product.name}
+                          </p>
+                          <p className="text-[10px] text-aq-on-surface-variant font-medium">
+                            {product.category}
+                          </p>
+                        </div>
+                        <span className="text-xs font-extrabold text-aq-primary">
+                          ₹{product.price.toFixed(2)}
+                        </span>
+                      </Link>
+                    ))}
+                    <div className="border-t border-aq-outline-variant/10 mt-1 pt-1.5 pb-1 px-3 text-[10px] text-center text-aq-outline font-semibold">
+                      Press Enter to see all results
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
-                onClick={() => setIsSearchOpen(false)}
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchQuery('');
+                  setSuggestions([]);
+                }}
                 className="p-2 rounded-full hover:bg-aq-surface-container-high transition-colors"
               >
                 <X className="h-4 w-4 text-aq-on-surface-variant" />

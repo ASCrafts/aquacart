@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
+import ShopSearch from '@/components/products/ShopSearch';
 
 async function getProducts(search?: string, category?: string) {
   await dbConnect();
@@ -61,17 +62,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             Premium quality aquatic products, delivered right to your door.
           </p>
           {/* Search bar */}
-          <form action="/shop" method="GET" className="relative max-w-md mx-auto">
-            {category && <input type="hidden" name="category" value={category} />}
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-aq-outline" />
-            <input
-              type="text"
-              name="search"
-              placeholder="Search seafood..."
-              defaultValue={search || ''}
-              className="w-full h-12 pl-12 pr-4 rounded-full bg-white/95 shadow-aq-lg text-sm text-aq-on-surface placeholder:text-aq-outline focus:outline-none focus:ring-2 focus:ring-white/30"
-            />
-          </form>
+          <ShopSearch initialSearch={search} />
         </div>
       </section>
 

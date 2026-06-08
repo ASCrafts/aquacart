@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import OrderModel from '@/models/Order';
+import UserModel from '@/models/User';
+import ProductModel from '@/models/Product';
+import { PAYMENT_STATUS, ORDER_STATUS } from '@/lib/constants';
+import { generateInvoice } from '@/lib/invoice';
+import { sendInvoiceEmail } from '@/lib/email';
 import crypto from 'crypto';
 
 /**
  * Client-side payment verification endpoint.
  * Called after the Razorpay modal closes with success.
- * Verifies the payment signature to confirm authenticity.
+ * Verifies the payment signature to confirm authenticity, then updates payment status,
+ * deducts stock, clears user cart, and triggers invoice email.
  */
 export async function POST(request: Request) {
   const session = await auth();
@@ -46,32 +52,92 @@ export async function POST(request: Request) {
   await dbConnect();
 
   try {
-    // Save the signature to order (webhook may have already processed, but this is the client confirmation)
-    const order = await OrderModel.findOneAndUpdate(
-      {
-        _id: orderId,
-        userId: session.user.id,
-        razorpayOrderId: razorpay_order_id,
-      },
-      {
-        razorpayPaymentId: razorpay_payment_id,
-        razorpaySignature: razorpay_signature,
-      },
-      { new: true }
-    );
+    const order = await OrderModel.findOne({
+      _id: orderId,
+      userId: session.user.id,
+      razorpayOrderId: razorpay_order_id,
+    });
 
     if (!order) {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }
 
+    // Idempotency check — skip if already processed by webhook or previous call
+    if (order.paymentStatus === PAYMENT_STATUS.PAID) {
+      return NextResponse.json({
+        message: 'Payment verified successfully (already processed)',
+        orderId: order._id.toString(),
+        paymentStatus: order.paymentStatus,
+      }, { status: 200 });
+    }
+
+    // Update order status
+    order.paymentStatus = PAYMENT_STATUS.PAID;
+    order.razorpayPaymentId = razorpay_payment_id;
+    order.razorpaySignature = razorpay_signature;
+    order.orderStatus = ORDER_STATUS.CONFIRMED;
+
+    // Convert reserved stock to actual stock deduction
+    for (const item of order.items) {
+      await ProductModel.findByIdAndUpdate(item.productId, {
+        $inc: {
+          quantity: -item.quantity,      // Deduct actual stock
+          reservedStock: -item.quantity, // Release reservation
+        },
+      });
+    }
+
+    // Mark products as unavailable if stock depleted
+    await ProductModel.updateMany(
+      {
+        _id: { $in: order.items.map(i => i.productId) },
+        quantity: { $lte: 0 },
+      },
+      { $set: { availability: false } }
+    );
+
+    // Generate invoice
+    try {
+      const invoiceUrl = await generateInvoice(order);
+      order.invoiceUrl = invoiceUrl;
+    } catch (err) {
+      console.error('Invoice generation failed in verify route:', err);
+    }
+
+    await order.save();
+
+    // Clear user cart after successful payment
+    try {
+      await UserModel.findByIdAndUpdate(session.user.id, {
+        $set: { 'cart.items': [] },
+      });
+    } catch (err) {
+      console.error('Failed to clear user cart in verify route:', err);
+    }
+
+    // Send invoice email (fire-and-forget, don't block response)
+    try {
+      if (order.invoiceUrl) {
+        await sendInvoiceEmail(
+          order.customerEmail,
+          order.customerName,
+          order._id.toString(),
+          order.totalAmount,
+          order.invoiceUrl
+        );
+      }
+    } catch (err) {
+      console.error('Invoice email failed in verify route:', err);
+    }
+
     return NextResponse.json({
-      message: 'Payment verified successfully',
+      message: 'Payment verified and processed successfully',
       orderId: order._id.toString(),
       paymentStatus: order.paymentStatus,
     }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Payment verification error:', error);
+    console.error('Payment verification processing error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
