@@ -5,13 +5,32 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Loader2, Minus, Plus, ShoppingCart, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, Minus, Plus, ShoppingCart, AlertCircle, ArrowLeft, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
+import { Review, ReviewApiResponse } from '@/types/Review';
+
+const StarRating = ({ rating, size = 18 }: { rating: number; size?: number }) => {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={size}
+          className={
+            star <= Math.round(rating)
+              ? 'fill-amber-400 text-amber-400'
+              : 'text-aq-outline-variant fill-transparent'
+          }
+        />
+      ))}
+    </div>
+  );
+};
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -22,6 +41,13 @@ export default function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  const [reviewsData, setReviewsData] = useState<ReviewApiResponse | null>(null);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
   const { toast } = useToast();
   const { data: session } = useSession();
@@ -53,6 +79,76 @@ export default function ProductDetailPage() {
 
     fetchProduct();
   }, [slug]);
+
+  const fetchReviews = async (productId: string) => {
+    setIsReviewsLoading(true);
+    try {
+      const res = await fetch(`/api/products/${productId}/reviews`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviewsData(data);
+        if (data.userReview) {
+          setReviewRating(data.userReview.rating);
+          setReviewComment(data.userReview.comment);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load reviews:', err);
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (product?._id) {
+      fetchReviews(product._id);
+    }
+  }, [product?._id]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please enter a comment for your review.',
+      });
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch(`/api/products/${product?._id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewComment }),
+      });
+
+      if (!res.ok) throw new Error('Failed to submit review');
+
+      toast({
+        title: reviewsData?.userReview ? 'Review Updated' : 'Review Submitted',
+        description: 'Thank you for your feedback!',
+      });
+
+      if (product?._id) {
+        await fetchReviews(product._id);
+      }
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not submit your review. Please try again.',
+      });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!session) {
@@ -160,6 +256,13 @@ export default function ProductDetailPage() {
               <span className={`aq-badge text-xs ${product.availability ? 'aq-badge-success' : 'aq-badge-danger'}`}>
                 {product.availability ? 'In Stock' : 'Out of Stock'}
               </span>
+              {reviewsData && reviewsData.totalCount > 0 && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <StarRating rating={reviewsData.averageRating} size={15} />
+                  <span className="font-bold text-aq-on-surface ml-0.5">{reviewsData.averageRating}</span>
+                  <span className="text-aq-on-surface-variant">({reviewsData.totalCount} {reviewsData.totalCount === 1 ? 'review' : 'reviews'})</span>
+                </div>
+              )}
             </div>
             <p className="text-3xl font-extrabold text-aq-primary mt-5 tracking-tight">
               ₹{product.price.toFixed(2)}
@@ -214,6 +317,212 @@ export default function ProductDetailPage() {
               )}
             </div>
           </motion.div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-16 pt-10 border-t border-aq-outline-variant/15">
+          <h2 className="text-xl md:text-2xl font-extrabold text-aq-on-surface tracking-tight mb-8">
+            Customer Reviews
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+            {/* Reviews Analytics / Summary */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
+              <div className="aq-card-static p-6 flex flex-col items-center justify-center text-center">
+                <p className="text-sm font-semibold text-aq-on-surface-variant uppercase tracking-wider">Average Rating</p>
+                <p className="text-6xl font-extrabold text-aq-primary mt-2 tracking-tight">
+                  {reviewsData ? reviewsData.averageRating.toFixed(1) : '0.0'}
+                </p>
+                <div className="mt-3">
+                  <StarRating rating={reviewsData ? reviewsData.averageRating : 0} size={20} />
+                </div>
+                <p className="text-xs text-aq-on-surface-variant mt-3 font-medium">
+                  Based on {reviewsData ? reviewsData.totalCount : 0} {reviewsData?.totalCount === 1 ? 'rating' : 'ratings'}
+                </p>
+              </div>
+
+              {/* Rating breakdown */}
+              {reviewsData && reviewsData.totalCount > 0 && (
+                <div className="aq-card-static p-6 flex flex-col gap-3">
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = reviewsData.reviews.filter(r => r.rating === stars).length;
+                    const percentage = reviewsData.totalCount > 0 ? (count / reviewsData.totalCount) * 100 : 0;
+                    return (
+                      <div key={stars} className="flex items-center gap-3 text-sm">
+                        <span className="font-bold text-aq-on-surface w-3">{stars}</span>
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400 flex-shrink-0" />
+                        <div className="flex-1 bg-aq-surface-container rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-amber-400 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-aq-on-surface-variant text-right w-8">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Review Form & List */}
+            <div className="lg:col-span-2 flex flex-col gap-8">
+              {/* Review Input Form */}
+              <div className="aq-card-static p-6">
+                <h3 className="text-lg font-bold text-aq-on-surface mb-4">
+                  {reviewsData?.userReview ? 'Edit Your Review' : 'Write a Review'}
+                </h3>
+                
+                {session ? (
+                  <form onSubmit={handleSubmitReview} className="flex flex-col gap-4">
+                    {/* Star selection */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-semibold text-aq-on-surface-variant">Your Rating</label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewRating(star)}
+                            onMouseEnter={() => setHoveredStar(star)}
+                            onMouseLeave={() => setHoveredStar(null)}
+                            className="p-1 rounded-md transition-transform hover:scale-110 focus:outline-none"
+                          >
+                            <Star
+                              size={28}
+                              className={
+                                star <= (hoveredStar ?? reviewRating)
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-aq-outline-variant fill-transparent'
+                              }
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Comment Area */}
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="review-comment" className="text-xs font-semibold text-aq-on-surface-variant">Review Comment</label>
+                      <textarea
+                        id="review-comment"
+                        rows={4}
+                        placeholder="Share your experience with this product..."
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        className="aq-input p-3 text-sm w-full font-sans leading-relaxed"
+                        required
+                      />
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex items-center justify-between mt-2">
+                      {reviewsData?.isVerifiedPurchase ? (
+                        <span className="aq-badge aq-badge-success text-xs flex items-center gap-1">
+                          Verified Purchase
+                        </span>
+                      ) : (
+                        <span className="text-xs text-aq-on-surface-variant">
+                          Non-verified review
+                        </span>
+                      )}
+                      
+                      <Button
+                        type="submit"
+                        disabled={isSubmittingReview}
+                        className="aq-btn-primary px-6 h-10 text-xs font-bold font-sans"
+                      >
+                        {isSubmittingReview ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Submitting...
+                          </>
+                        ) : reviewsData?.userReview ? (
+                          'Update Review'
+                        ) : (
+                          'Submit Review'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-aq-on-surface-variant mb-4">
+                      You must be logged in to write a review.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="aq-btn-outline px-6 py-2 h-10 text-xs inline-flex items-center font-bold"
+                    >
+                      Log In to Review
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Reviews List */}
+              <div className="flex flex-col gap-4">
+                <h3 className="text-lg font-bold text-aq-on-surface">
+                  Latest Customer Feedback
+                </h3>
+
+                {isReviewsLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-aq-primary" />
+                  </div>
+                ) : !reviewsData || reviewsData.reviews.length === 0 ? (
+                  <div className="aq-card-static p-8 text-center text-aq-on-surface-variant">
+                    <p className="text-sm font-medium">No reviews yet for this product.</p>
+                    <p className="text-xs mt-1">Be the first to share your experience!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {reviewsData.reviews.map((review) => {
+                      const initials = review.userName
+                        ? review.userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+                        : 'A';
+                      const formattedDate = new Date(review.createdAt).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      });
+                      
+                      return (
+                        <div key={review._id} className="aq-card-static p-5 flex gap-4">
+                          {/* User Avatar Initials */}
+                          <div className="w-10 h-10 rounded-full bg-aq-primary/10 text-aq-primary flex items-center justify-center font-extrabold text-sm flex-shrink-0">
+                            {initials}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                              <div>
+                                <h4 className="font-bold text-aq-on-surface text-sm truncate">{review.userName}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <StarRating rating={review.rating} size={14} />
+                                  {review.isVerified && (
+                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                      Verified Purchase
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="text-xs text-aq-on-surface-variant font-medium">
+                                {formattedDate}
+                              </span>
+                            </div>
+                            <p className="text-sm text-aq-on-surface-variant mt-3 whitespace-pre-line leading-relaxed">
+                              {review.comment}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
