@@ -6,7 +6,7 @@ import OrderModel from '@/models/Order';
 import ProductModel from '@/models/Product';
 import { getRazorpayInstance } from '@/lib/razorpay';
 import { PAYMENT_STATUS } from '@/lib/constants';
-import mongoose from 'mongoose';
+import mongoose from '@/lib/mongoose-mock';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     // Server-side total calculation — never trust client
     let totalAmount = 0;
-    const orderItems = [];
+    const orderItems: any[] = [];
 
     for (const item of user.cart.items) {
       const product = item.productId as any;
@@ -86,10 +86,19 @@ export async function POST(request: Request) {
 
     // Reserve stock (increment reservedStock without deducting actual quantity)
     for (const item of orderItems) {
-      await ProductModel.findByIdAndUpdate(
+      const updatedProduct = await ProductModel.findByIdAndUpdate(
         item.productId,
-        { $inc: { reservedStock: item.quantity } }
-      ).session(dbSession);
+        { $inc: { reservedStock: item.quantity } },
+        { session: dbSession, new: true }
+      );
+
+      if (!updatedProduct) {
+        throw new Error(`Product not found.`);
+      }
+
+      if (updatedProduct.quantity - updatedProduct.reservedStock < 0) {
+        throw new Error(`Not enough stock for "${updatedProduct.name}".`);
+      }
     }
 
     // Create Razorpay order

@@ -3,7 +3,9 @@ import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import OrderModel from '@/models/Order';
 import { ORDER_STATUS } from '@/lib/constants';
-import mongoose from 'mongoose';
+function isValidId(id: string) {
+  return typeof id === 'string' && id.length >= 8;
+}
 import { z } from 'zod';
 
 const refundSchema = z.object({
@@ -21,7 +23,7 @@ export async function POST(
 
   const { id } = await params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!isValidId(id)) {
     return NextResponse.json({ message: 'Invalid order ID' }, { status: 400 });
   }
 

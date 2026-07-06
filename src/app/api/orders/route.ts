@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import UserModel from '@/models/User';
 import OrderModel from '@/models/Order';
 import ProductModel from '@/models/Product';
-import mongoose from 'mongoose';
+import mongoose from '@/lib/mongoose-mock';
 
 async function notifyWebSocketServer(orderData: any) {
   try {
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     let totalAmount = 0;
-    const orderItems = [];
+    const orderItems: any[] = [];
 
     for (const item of user.cart.items) {
       const product = item.productId as any;

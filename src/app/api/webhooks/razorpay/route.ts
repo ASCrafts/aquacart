@@ -72,6 +72,13 @@ async function handlePaymentCaptured(event: any) {
   const razorpayOrderId = payment.order_id;
   const razorpayPaymentId = payment.id;
 
+  // Query the database to ensure that specific payment ID hasn't already been processed
+  const existingOrderWithPayment = await OrderModel.findOne({ razorpayPaymentId });
+  if (existingOrderWithPayment) {
+    console.log(`Webhook Idempotency: Payment ID ${razorpayPaymentId} already processed. Skipping.`);
+    return;
+  }
+
   // Find the order by razorpayOrderId
   const order = await OrderModel.findOne({ razorpayOrderId });
   if (!order) {

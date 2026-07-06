@@ -4,7 +4,9 @@ import ReviewModel from '@/models/Review';
 import OrderModel from '@/models/Order';
 import ProductModel from '@/models/Product';
 import { auth } from '@/lib/auth';
-import mongoose from 'mongoose';
+function isValidId(id: string) {
+  return typeof id === 'string' && id.length >= 8;
+}
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -16,7 +18,7 @@ export async function GET(request: Request, { params }: Props) {
     await dbConnect();
     const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
     }
 
@@ -65,7 +67,7 @@ export async function POST(request: Request, { params }: Props) {
     }
 
     const { id } = await params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
     }
 

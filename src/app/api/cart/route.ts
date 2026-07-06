@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import UserModel from '@/models/User';
 import ProductModel from '@/models/Product';
-import mongoose from 'mongoose';
+import { ObjectIdWrapper } from '@/models/helpers';
 
 // GET cart
 export async function GET(request: Request) {
@@ -20,7 +20,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
     return NextResponse.json(user.cart, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('GET cart error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -57,13 +58,14 @@ export async function POST(request: Request) {
       user.cart.items[cartItemIndex].quantity += quantity;
     } else {
       // Add new item
-      user.cart.items.push({ productId: new mongoose.Types.ObjectId(productId), quantity, unit: 'piece' });
+      user.cart.items.push({ productId: new ObjectIdWrapper(productId) as any, quantity, unit: 'piece' });
     }
 
     await user.save();
     return NextResponse.json(user.cart, { status: 200 });
 
-  } catch (error) {
+  } catch (error: any) {
+    console.error('POST cart error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -106,7 +108,8 @@ export async function PUT(request: Request) {
       } else {
         return NextResponse.json({ message: 'Item not in cart' }, { status: 404 });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('PUT cart error:', error);
       return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }
@@ -134,7 +137,8 @@ export async function DELETE(request: Request) {
   
       await user.save();
       return NextResponse.json(user.cart, { status: 200 });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('DELETE cart error:', error);
       return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }

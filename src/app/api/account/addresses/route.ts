@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import UserModel from '@/models/User';
-import mongoose from 'mongoose';
+import { ObjectIdWrapper } from '@/models/helpers';
 
 // POST a new address
 export async function POST(request: Request) {
@@ -38,7 +38,7 @@ export async function PUT(request: Request) {
         const user = await UserModel.findById(session.user.id);
         if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
-        const addressObjectId = new mongoose.Types.ObjectId(addressId);
+        const addressObjectId = new ObjectIdWrapper(addressId);
 
         if (action === 'delete') {
             user.addresses = user.addresses.filter(addr => addr._id.toString() !== addressId);

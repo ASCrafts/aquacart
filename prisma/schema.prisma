@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                           String         @id @default(cuid()) @map("_id")
+  name                         String
+  email                        String         @unique
+  phone                        String
+  password                     String
+  role                         String         @default("customer")
+  isEmailVerified              Boolean        @default(false)
+  emailVerificationToken       String?
+  emailVerificationTokenExpiry DateTime?
+  resetPasswordToken           String?
+  resetPasswordTokenExpiry     DateTime?
+  tempEmail                    String?
+  tempEmailVerificationToken   String?
+  tempEmailVerificationTokenExpiry DateTime?
+  createdAt                    DateTime       @default(now())
+  updatedAt                    DateTime       @updatedAt
+  
+  addresses                    Address[]
+  cartItems                    CartItem[]
+  orders                       Order[]
+  reviews                      Review[]
+}
+
+model Address {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  street     String
+  city       String
+  state      String
+  zipCode    String
+  isDefault  Boolean  @default(false)
+}
+
+model CartItem {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity   Float
+  unit       String   @default("piece") // "piece" or "kg"
+}
+
+model Product {
+  id            String     @id @default(cuid()) @map("_id")
+  name          String
+  slug          String     @unique
+  description   String     @db.Text
+  price         Float
+  pricePerKg    Float      @default(0)
+  imageUrl      String     @db.Text
+  imageHint     String?
+  category      String
+  quantity      Float      // stock quantity (pieces)
+  stockKg       Float      @default(0)
+  reservedStock Float      @default(0)
+  maxQuantity   Int        @default(99)
+  availability  Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+}
+
+model Order {
+  id                String      @id @default(cuid()) @map("_id")
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerName      String
+  customerEmail     String
+  customerPhone     String
+  totalAmount       Float
+  deliveryAddress   String      @db.Text // Store as a JSON string
+  paymentMethod     String      @default("Razorpay")
+  paymentStatus     String      @default("Pending")
+  orderStatus       String      @default("Pending")
+  refundStatus      String      @default("None")
+  refundReason      String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  invoiceUrl        String?     @db.Text
+  idempotencyKey    String?     @unique
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items             OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid()) @map("_id")
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Float
+  quantity  Float
+}
+
+model Review {
+  id         String   @id @default(cuid()) @map("_id")
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName   String
+  rating     Int
+  comment    String   @db.Text
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([productId, userId])
+}

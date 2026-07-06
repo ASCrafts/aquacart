@@ -5,7 +5,7 @@ import OrderModel from '@/models/Order';
 import ProductModel from '@/models/Product';
 import { getRazorpayInstance } from '@/lib/razorpay';
 import { ROLES, PAYMENT_STATUS } from '@/lib/constants';
-import mongoose from 'mongoose';
+import mongoose from '@/lib/mongoose-mock';
 
 /**
  * Admin API: Process a refund for a paid order via Razorpay.

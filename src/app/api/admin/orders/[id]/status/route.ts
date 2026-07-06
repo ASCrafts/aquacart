@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import OrderModel from '@/models/Order';
 import { ROLES, ORDER_STATUS } from '@/lib/constants';
-import mongoose from 'mongoose';
+import mongoose from '@/lib/mongoose-mock';
 
 /**
  * Admin API: Update order status (e.g., Confirmed → Out for Delivery → Delivered).

@@ -1,0 +1,38 @@
+name: AquaCart Continuous Integration
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  build-and-test:
+    name: Build & Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-size: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm install --include=dev
+
+      - name: Verify TypeScript compilation
+        run: npm run typecheck
+
+      - name: Execute Automated Unit Tests
+        run: npm run test
+
+      - name: Compile Next.js Production Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          DATABASE_URL: "mysql://mock:mock@localhost:3306/mock"

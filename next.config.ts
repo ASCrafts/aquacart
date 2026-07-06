@@ -11,8 +11,14 @@ const pwaConfig = withPWA({
   // workboxOptions: { skipWaiting: true },
 });
 
+import path from 'path';
+
 const nextConfig: NextConfig = {
   /* config options here */
+  webpack: (config) => {
+    config.resolve.alias['mongoose'] = path.join(process.cwd(), 'src/lib/mongoose-mock.ts');
+    return config;
+  },
   allowedDevOrigins: ['192.168.56.1'],
   typescript: {
     ignoreBuildErrors: true,

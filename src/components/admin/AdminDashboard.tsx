@@ -151,8 +151,8 @@ export default function AdminDashboard() {
       </CardContent>
     </Card>
 
-    {/* Order Management Link */}
-    <div className="mt-6">
+    {/* Admin Tools Links */}
+    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Order Management</CardTitle>
@@ -163,6 +163,23 @@ export default function AdminDashboard() {
         <CardContent>
           <Button asChild className="w-full sm:w-auto">
             <Link href="/admin/orders">Go to Order Management</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span>AI Inventory Agent</span>
+            <span className="aq-badge aq-badge-success text-[10px] uppercase font-bold tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">AI Powered</span>
+          </CardTitle>
+          <CardDescription>
+            Analyze invoices, shelf tags, or product images with voice commands to add stock and update prices.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
+            <Link href="/admin/inventory-agent">Launch AI Agent</Link>
           </Button>
         </CardContent>
       </Card>

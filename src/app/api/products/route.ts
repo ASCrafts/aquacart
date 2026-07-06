@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ProductModel from '@/models/Product';
-import mongoose from 'mongoose';
 import { auth } from '@/lib/auth';
 
 export async function GET() {
@@ -11,7 +10,7 @@ export async function GET() {
     
     // Filter out invalid IDs (like we did before)
     const validProducts = allProducts.filter((product) =>
-      mongoose.Types.ObjectId.isValid(product._id as any)
+      product._id && typeof product._id === 'string' && product._id.length >= 8
     );
 
     return NextResponse.json(validProducts, { status: 200 });

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ProductModel from '@/models/Product';
-import mongoose from 'mongoose';
+function isValidId(id: string) {
+  return typeof id === 'string' && id.length >= 8;
+}
 import { auth } from '@/lib/auth';
 
 // Define the type for the route params
@@ -16,7 +18,7 @@ export async function GET(request: Request, { params }: Props) {
     // FIX: Await the params object before accessing id
     const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json(
         { message: 'Invalid product ID' },
         { status: 400 }
@@ -58,7 +60,7 @@ export async function PUT(request: Request, { params }: Props) {
     // FIX: Await the params object
     const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json(
         { message: 'Invalid product ID' },
         { status: 400 }
@@ -137,7 +139,7 @@ export async function DELETE(request: Request, { params }: Props) {
     // FIX: Await the params object
     const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json(
         { message: 'Invalid product ID' },
         { status: 400 }
@@ -177,7 +179,7 @@ export async function PATCH(request: Request, { params }: Props) {
     await dbConnect();
     const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidId(id)) {
       return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
     }
 
