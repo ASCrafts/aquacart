@@ -7,7 +7,7 @@
     "ws:dev": "tsx watch src/server/websocket.ts",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "cross-env NODE_ENV=production next build --webpack",
+    "build": "prisma generate && cross-env NODE_ENV=production next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
