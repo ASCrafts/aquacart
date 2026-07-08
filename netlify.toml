@@ -7,4 +7,4 @@
   # at module scope) and are not secrets, so exclude them from Netlify's
   # secrets scanner. Real secrets (DATABASE_URL, NEXTAUTH_SECRET, API keys,
   # etc.) remain scanned.
-  SECRETS_SCAN_OMIT_KEYS = "AUTH_URL,WSS_PORT,EMAIL_SERVER_HOST,NEXT_PUBLIC_WSS_URL"
+  SECRETS_SCAN_OMIT_KEYS = "AUTH_URL,WSS_PORT,EMAIL_SERVER_HOST,NEXT_PUBLIC_WSS_URL,NEXT_PUBLIC_APP_URL"
