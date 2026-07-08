@@ -18,11 +18,14 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-size: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Project Dependencies
         run: npm install --include=dev
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: Verify TypeScript compilation
         run: npm run typecheck
