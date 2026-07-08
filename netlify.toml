@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # These values end up in compiled output by design (NEXT_PUBLIC_* is
+  # exposed to the client bundle; the others are non-sensitive config read
+  # at module scope) and are not secrets, so exclude them from Netlify's
+  # secrets scanner. Real secrets (DATABASE_URL, NEXTAUTH_SECRET, API keys,
+  # etc.) remain scanned.
+  SECRETS_SCAN_OMIT_KEYS = "AUTH_URL,WSS_PORT,EMAIL_SERVER_HOST,NEXT_PUBLIC_WSS_URL"
