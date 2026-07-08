@@ -9,7 +9,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const getBaseUrl = () => process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_URL || 'http://localhost:3000';
+const getBaseUrl = () => {
+  const candidates = [process.env.NEXT_PUBLIC_APP_URL, process.env.AUTH_URL];
+  if (process.env.NODE_ENV === 'production') {
+    // Ignore localhost values leaked into production env vars
+    const url = candidates.find((u) => u && !u.includes('localhost'));
+    return url || 'https://aqua-cart.netlify.app';
+  }
+  return candidates.find(Boolean) || 'http://localhost:9002';
+};
 
 const emailStyles = `
   <style>

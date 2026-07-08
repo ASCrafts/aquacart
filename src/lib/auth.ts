@@ -7,6 +7,17 @@ import UserModel, { IUser } from '@/models/User';
 import { authConfig } from './auth.config';
 import jwt from 'jsonwebtoken';
 
+// A localhost AUTH_URL in a production deploy (e.g. copied into Netlify env
+// vars from a dev .env) would take precedence over trustHost and send every
+// auth redirect to localhost. Discard it so the request host is used instead.
+if (process.env.NODE_ENV === 'production') {
+  for (const key of ['AUTH_URL', 'NEXTAUTH_URL'] as const) {
+    if (process.env[key]?.includes('localhost')) {
+      delete process.env[key];
+    }
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   trustHost: true,
