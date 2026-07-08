@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Home, LayoutGrid, ShoppingBag, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -15,6 +16,7 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
@@ -29,8 +31,9 @@ export default function BottomNav() {
         // silently fail
       }
     };
-    fetchCartCount();
-  }, [pathname]);
+    if (session) fetchCartCount();
+    else setCartCount(0);
+  }, [session, pathname]);
 
   return (
     <nav className="aq-bottom-nav md:hidden" id="bottom-nav">
