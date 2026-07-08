@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { authConfig } from './lib/auth.config';
 import NextAuth from 'next-auth';
 
-const { auth: proxy } = NextAuth(authConfig);
+const { auth: proxy } = NextAuth({ ...authConfig, trustHost: true });
 
 // In-memory store for rate limiting (sliding window timestamps)
 const rateLimitMap = new Map<string, number[]>();
