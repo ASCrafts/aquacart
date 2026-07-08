@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     await dbConnect();
     const user = await UserModel.findById(session.user.id).populate('cart.items.productId', 'name price imageUrl');
     if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      // Session references a deleted user — treat as logged out
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.json(user.cart, { status: 200 });
   } catch (error: any) {
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     await dbConnect();
     const user = await UserModel.findById(session.user.id);
     if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
     const product = await ProductModel.findById(productId);
@@ -86,7 +87,7 @@ export async function PUT(request: Request) {
       await dbConnect();
       const user = await UserModel.findById(session.user.id);
       if (!user) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
       }
   
       const cartItemIndex = user.cart.items.findIndex(item => item.productId.toString() === productId);
@@ -130,7 +131,7 @@ export async function DELETE(request: Request) {
       await dbConnect();
       const user = await UserModel.findById(session.user.id);
       if (!user) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
       }
 
       user.cart.items = user.cart.items.filter(item => item.productId.toString() !== productId);
