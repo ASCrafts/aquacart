@@ -4,11 +4,16 @@ import withPWA from '@ducanh2912/next-pwa';
 
 const pwaConfig = withPWA({
   dest: 'public',
-  disable: false, // Temporarily enabled for testing
+  disable: false,
   register: true,
-  // REMOVED: skipWaiting: true (This was causing the TypeScript error)
-  // If you specifically need this, it usually goes into workboxOptions like this:
-  // workboxOptions: { skipWaiting: true },
+  // Activate a freshly deployed worker immediately and let it take control
+  // of already-open tabs, so new deployments reach users on their next page
+  // load instead of waiting for every tab to close. ServiceWorkerUpdater
+  // reloads the page once the new worker assumes control.
+  workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
+  },
 });
 
 import path from 'path';
