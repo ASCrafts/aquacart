@@ -4,7 +4,10 @@ import withPWA from '@ducanh2912/next-pwa';
 
 const pwaConfig = withPWA({
   dest: 'public',
-  disable: false,
+  // Never run the service worker in development: it caches pages/assets and
+  // makes local changes look "stuck" even after a hard refresh.
+  // ServiceWorkerUpdater unregisters any previously installed SW in dev.
+  disable: process.env.NODE_ENV === 'development',
   register: true,
   // Activate a freshly deployed worker immediately and let it take control
   // of already-open tabs, so new deployments reach users on their next page
@@ -13,6 +16,8 @@ const pwaConfig = withPWA({
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
+    // Drop precaches left behind by older SW versions on activate.
+    cleanupOutdatedCaches: true,
   },
 });
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Fish, Waves, Leaf, Truck, ArrowRight, Sparkles } from 'lucide-react';
+import { Fish, Leaf, Truck, ArrowRight, Sparkles } from 'lucide-react';
 
 const features = [
   {
@@ -40,15 +40,7 @@ export default function GuestLanding() {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center gap-8 px-6 text-center max-w-2xl mx-auto">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20">
-              <Waves className="w-7 h-7 text-white" />
-            </div>
-            <span className="text-white text-xl font-extrabold tracking-tight">AquaCart</span>
-          </div>
-
-          {/* Headline */}
+          {/* Headline (branding lives in the sticky GuestHeader above) */}
           <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/15">
               <Sparkles className="w-3.5 h-3.5 text-aq-tertiary-fixed" />
