@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Fish,
   FishSymbol,
@@ -117,10 +118,13 @@ export default function GuestLanding() {
 
           {/* Morphed picture */}
           <div className="relative w-full lg:w-1/2 h-[320px] md:h-[440px] lg:h-[640px]">
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?q=80&w=1600&auto=format&fit=crop"
               alt="Fresh seafood on ice"
-              className="absolute inset-0 w-full h-full object-cover animate-morph motion-reduce:animate-none"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover animate-morph motion-reduce:animate-none"
               style={{ borderRadius: '58% 0 0 58% / 50% 0 0 50%' }}
             />
             <div className="absolute bottom-6 right-6 lg:bottom-10 lg:right-10 bg-white p-4 rounded-2xl shadow-aq-lg flex items-center gap-3">
@@ -173,11 +177,13 @@ export default function GuestLanding() {
                 href="/register"
                 className="aq-card group overflow-hidden p-0"
               >
-                <div className="h-40 overflow-hidden bg-aq-surface-container">
-                  <img
+                <div className="relative h-40 overflow-hidden bg-aq-surface-container">
+                  <Image
                     src={c.img}
                     alt={c.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
                 <div className="p-5 flex items-start gap-4">

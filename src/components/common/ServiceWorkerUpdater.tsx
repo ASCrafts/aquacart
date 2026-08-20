@@ -62,6 +62,14 @@ export function ServiceWorkerUpdater() {
     // ---- Production: force new deployments to take over immediately ----
     let reloading = false;
 
+    // Was this page already controlled when it loaded? `clientsClaim: true`
+    // makes a brand-new worker claim uncontrolled pages, which fires
+    // `controllerchange` even though nothing was replaced. Reloading on that
+    // is what made the first tap on a nav link do nothing but flash white —
+    // the reload cancelled the navigation and re-rendered the current page.
+    // Only a worker replacing an existing one is a real update worth a reload.
+    const hadController = !!navigator.serviceWorker.controller;
+
     const promptWaiting = (registration: ServiceWorkerRegistration) => {
       const waiting = registration.waiting;
       // Only act on an *update* — a waiting worker while another already
@@ -81,9 +89,9 @@ export function ServiceWorkerUpdater() {
       });
     };
 
-    // Reload exactly once when the new worker assumes control.
+    // Reload exactly once when a *replacement* worker assumes control.
     const onControllerChange = () => {
-      if (reloading) return;
+      if (reloading || !hadController) return;
       reloading = true;
       window.location.reload();
     };

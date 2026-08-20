@@ -9,6 +9,16 @@ const pwaConfig = withPWA({
   // ServiceWorkerUpdater unregisters any previously installed SW in dev.
   disable: process.env.NODE_ENV === 'development',
   register: true,
+  // next-pwa defaults this to true, which installs
+  // `window.addEventListener('online', () => location.reload())`.
+  // Mobile browsers fire `online` whenever connectivity is re-evaluated —
+  // notably when a backgrounded PWA is resumed — so a tap on a nav link would
+  // be thrown away by a full page reload: the user sees a white flash, lands
+  // back on the same page, and has to press again.
+  reloadOnOnline: false,
+  // Keep every default runtime-caching rule (hashed JS/CSS, fonts, images —
+  // where the real speed win is) and put the rule below in front of them.
+  extendDefaultRuntimeCaching: true,
   // Activate a freshly deployed worker immediately and let it take control
   // of already-open tabs, so new deployments reach users on their next page
   // load instead of waiting for every tab to close. ServiceWorkerUpdater
@@ -18,6 +28,17 @@ const pwaConfig = withPWA({
     clientsClaim: true,
     // Drop precaches left behind by older SW versions on activate.
     cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        // Never serve an HTML document from cache. next-pwa's default keeps
+        // pages for 24h under NetworkFirst; after a deploy that stale HTML
+        // points at hashed chunks the CDN no longer has, so the page loads to
+        // a blank screen until a second, uncached load. The app needs auth and
+        // live stock anyway, so a cached document is of no use offline.
+        urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+        handler: 'NetworkOnly',
+      },
+    ],
   },
 });
 

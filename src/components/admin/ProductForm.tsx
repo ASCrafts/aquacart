@@ -29,6 +29,19 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { SerializedProduct } from '@/models/Product';
+import type { Category } from '@/lib/fish-catalog';
+
+// Must stay in step with the `Category` union in src/lib/fish-catalog.ts —
+// a category offered here that the catalog does not use (or vice versa) means
+// an admin silently re-files a product under a category the shop never shows.
+const CATEGORIES: { value: Category; emoji: string }[] = [
+  { value: 'Fish', emoji: '🐟' },
+  { value: 'Prawns', emoji: '🦐' },
+  { value: 'Crab', emoji: '🦀' },
+  { value: 'Lobster', emoji: '🦞' },
+  { value: 'Shellfish', emoji: '🐚' },
+  { value: 'Squid', emoji: '🦑' },
+];
 
 function generateSlug(name: string): string {
   return name
@@ -335,10 +348,11 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="Fish">🐟 Fish</SelectItem>
-                    <SelectItem value="Shellfish">🦐 Shellfish</SelectItem>
-                    <SelectItem value="Fillet">🍣 Fillet</SelectItem>
-                    <SelectItem value="Whole">🐡 Whole</SelectItem>
+                    {CATEGORIES.map(({ value, emoji }) => (
+                      <SelectItem key={value} value={value}>
+                        {emoji} {value}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
