@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Check, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SerializedProduct } from '@/models/Product';
+import { formatPrice } from '@/lib/utils';
 
 export default function SuggestedFish() {
   const [products, setProducts] = useState<SerializedProduct[]>([]);
@@ -126,7 +127,7 @@ export default function SuggestedFish() {
               </Link>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-sm font-extrabold text-aq-primary">
-                  ₹{product.price.toFixed(2)}
+                  {formatPrice(product)}
                 </span>
                 <button
                   onClick={() => handleQuickAdd(product)}

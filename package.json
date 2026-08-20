@@ -12,6 +12,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx src/lib/seed.ts",
+    "db:import-fish": "tsx scripts/import-fish.ts",
     "test": "tsx test-runner.ts"
   },
   "dependencies": {

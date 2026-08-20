@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Review, ReviewApiResponse } from '@/types/Review';
+import { formatPrice } from '@/lib/utils';
 
 const StarRating = ({ rating, size = 18 }: { rating: number; size?: number }) => {
   return (
@@ -190,6 +191,9 @@ export default function ProductDetailClient({ product }: { product: any }) {
             <h1 className="text-2xl md:text-3xl font-extrabold text-aq-on-surface tracking-tight">
               {product.name}
             </h1>
+            {product.nameTamil && (
+              <p className="text-base text-aq-on-surface-variant mt-1">{product.nameTamil}</p>
+            )}
 
             <div className="flex items-center gap-3 mt-3">
               <span className={`aq-badge text-xs ${product.availability ? 'aq-badge-success' : 'aq-badge-danger'}`}>
@@ -204,7 +208,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
               )}
             </div>
             <p className="text-3xl font-extrabold text-aq-primary mt-5 tracking-tight">
-              ₹{product.price.toFixed(2)}
+              {formatPrice(product)}
               <span className="text-sm font-medium text-aq-on-surface-variant ml-1">/ piece</span>
             </p>
 

@@ -58,10 +58,13 @@ model CartItem {
 model Product {
   id            String     @id @default(cuid()) @map("_id")
   name          String
+  nameTamil     String?    // Tamil script name, e.g. வஞ்சிரம்
+  aliases       String?    @db.Text // pipe-separated search spellings: "vanjaram|vanjiram|king fish"
   slug          String     @unique
   description   String     @db.Text
   price         Float
   pricePerKg    Float      @default(0)
+  unit          String     @default("piece") // what `price` buys: "piece" or "kg"
   imageUrl      String     @db.Text
   imageHint     String?
   category      String

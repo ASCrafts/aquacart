@@ -42,6 +42,8 @@ function generateSlug(name: string): string {
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  nameTamil: z.string().optional(),
+  aliases: z.string().optional(),
   slug: z.string().min(2, { message: 'Slug must be at least 2 characters.' }).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'Slug must be URL-safe (e.g. fresh-salmon).' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   price: z.coerce.number().min(0.01, { message: 'Price must be greater than 0.' }),
@@ -70,6 +72,8 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || '',
+      nameTamil: initialData?.nameTamil || '',
+      aliases: initialData?.aliases || '',
       slug: initialData?.slug || '',
       description: initialData?.description || '',
       price: initialData?.price || 0,
@@ -111,6 +115,8 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
     try {
       const formData = new FormData();
       formData.append('name', values.name);
+      formData.append('nameTamil', values.nameTamil || '');
+      formData.append('aliases', values.aliases || '');
       formData.append('slug', values.slug);
       formData.append('description', values.description);
       formData.append('price', values.price.toString());
@@ -238,6 +244,47 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="nameTamil"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Tamil Name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g. வஞ்சிரம்"
+                    className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all placeholder:text-aq-outline/50"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="aliases"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                  Search Aliases
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="vanjaram|vanjiram|neymeen|king fish"
+                    className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all placeholder:text-aq-outline/50"
+                    {...field}
+                  />
+                </FormControl>
+                <p className="text-[11px] text-aq-on-surface-variant">
+                  Every spelling a customer might type, separated by <code>|</code>. Never shown on the site.
+                </p>
                 <FormMessage />
               </FormItem>
             )}

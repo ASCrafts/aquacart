@@ -77,8 +77,8 @@ describe('ProductModel Compatibility Wrapper', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith({
       where: {
         OR: [
-          { name: { contains: 'Tuna', mode: 'insensitive' } },
-          { description: { contains: 'Tuna', mode: 'insensitive' } },
+          { name: { contains: 'Tuna' } },
+          { description: { contains: 'Tuna' } },
         ],
       },
       orderBy: undefined,

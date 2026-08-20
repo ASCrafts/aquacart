@@ -138,6 +138,11 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-3px)' },
         },
+        /* Organic "picture morph": left edge of the hero photo breathes. */
+        morph: {
+          '0%, 100%': { borderRadius: '58% 0 0 58% / 50% 0 0 50%' },
+          '50%': { borderRadius: '48% 0 0 66% / 42% 0 0 58%' },
+        },
       },
 
       animation: {
@@ -146,6 +151,7 @@ export default {
         'slide-up': 'slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'scale-in': 'scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'bounce-subtle': 'bounce-subtle 0.4s ease',
+        morph: 'morph 12s ease-in-out infinite',
       },
     },
   },

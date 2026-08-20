@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     // 2. Parse FormData
     const formData = await request.formData();
     const name = formData.get('name') as string;
+    const nameTamil = (formData.get('nameTamil') as string) || null;
+    const aliases = (formData.get('aliases') as string) || null;
     const slug = (formData.get('slug') as string)?.toLowerCase().trim();
     const description = formData.get('description') as string;
     const price = parseFloat(formData.get('price') as string);
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
 
     // 3. Create Product
     const newProduct = await ProductModel.create({
-      name, slug, description, price, pricePerKg, category, quantity, stockKg, maxQuantity, imageUrl
+      name, nameTamil, aliases, slug, description, price, pricePerKg, category, quantity, stockKg, maxQuantity, imageUrl
     });
 
     return NextResponse.json(newProduct, { status: 201 });

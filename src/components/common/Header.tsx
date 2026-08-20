@@ -6,7 +6,7 @@ import { Crown, LayoutGrid, LogIn, LogOut, Search, ShoppingCart, User, Waves, X 
 import { Button } from '@/components/ui/button';
 import { ROLES } from '@/lib/constants';
 import { usePathname, useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, formatPrice } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useEffect } from 'react';
+import { searchProducts } from '@/lib/search';
 
 const desktopNavLinks = [
   { href: '/', label: 'Home' },
@@ -53,12 +54,11 @@ export default function Header() {
   }, [isSearchOpen, allProducts.length]);
 
   useEffect(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const query = searchQuery.trim();
     if (query) {
-      const filtered = allProducts
-        .filter((p) => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
-        .slice(0, 5);
-      setSuggestions(filtered);
+      // Same ranking as /shop, so Tamil and Tanglish spellings work here too.
+      const { matches, suggestions: closest } = searchProducts(allProducts, query);
+      setSuggestions((matches.length > 0 ? matches : closest).slice(0, 5));
     } else {
       setSuggestions([]);
     }
@@ -201,12 +201,13 @@ export default function Header() {
                           <p className="text-xs font-bold text-aq-on-surface truncate">
                             {product.name}
                           </p>
-                          <p className="text-[10px] text-aq-on-surface-variant font-medium">
+                          <p className="text-[10px] text-aq-on-surface-variant font-medium truncate">
+                            {product.nameTamil ? `${product.nameTamil} · ` : ''}
                             {product.category}
                           </p>
                         </div>
                         <span className="text-xs font-extrabold text-aq-primary">
-                          ₹{product.price.toFixed(2)}
+                          {formatPrice(product)}
                         </span>
                       </Link>
                     ))}

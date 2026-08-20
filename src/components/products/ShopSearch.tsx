@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 
@@ -10,15 +10,17 @@ interface ShopSearchProps {
 
 export default function ShopSearch({ initialSearch = '' }: ShopSearchProps) {
   const [value, setValue] = useState(initialSearch);
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Adopt the URL's query (back/forward, "Clear Filters") — but never while the
+  // box has focus: the debounced push below lands a few hundred ms late, so
+  // syncing mid-typing would overwrite the characters typed since.
   useEffect(() => {
-    const currentSearch = searchParams.get('search') || '';
-    if (currentSearch !== value) {
-      setValue(currentSearch);
-    }
+    if (inputRef.current === document.activeElement) return;
+    setValue(searchParams.get('search') || '');
   }, [searchParams]);
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function ShopSearch({ initialSearch = '' }: ShopSearchProps) {
     <div className="relative max-w-md mx-auto">
       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-aq-outline" />
       <input
+        ref={inputRef}
         type="text"
         placeholder="Search seafood..."
         value={value}

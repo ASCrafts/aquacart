@@ -3,10 +3,13 @@ import prisma from '@/lib/prisma';
 export interface IProduct {
   _id: string;
   name: string;
+  nameTamil?: string | null;
+  aliases?: string | null;
   slug: string;
   description: string;
   price: number;
   pricePerKg: number;
+  unit: string;
   imageUrl: string;
   imageHint?: string;
   category: string;
@@ -23,10 +26,13 @@ export interface IProduct {
 export interface SerializedProduct {
   _id: string;
   name: string;
+  nameTamil?: string | null;
+  aliases?: string | null;
   slug: string;
   description: string;
   price: number;
   pricePerKg: number;
+  unit: string;
   imageUrl: string;
   imageHint?: string;
   category: string;
@@ -42,10 +48,13 @@ export interface SerializedProduct {
 export class ProductModel implements IProduct {
   _id: string;
   name: string;
+  nameTamil?: string | null;
+  aliases?: string | null;
   slug: string;
   description: string;
   price: number;
   pricePerKg: number;
+  unit: string;
   imageUrl: string;
   imageHint?: string;
   category: string;
@@ -60,10 +69,13 @@ export class ProductModel implements IProduct {
   constructor(p: any) {
     this._id = p.id || p._id || '';
     this.name = p.name || '';
+    this.nameTamil = p.nameTamil ?? null;
+    this.aliases = p.aliases ?? null;
     this.slug = p.slug || '';
     this.description = p.description || '';
     this.price = p.price || 0;
     this.pricePerKg = p.pricePerKg || 0;
+    this.unit = p.unit || 'piece';
     this.imageUrl = p.imageUrl || '';
     this.imageHint = p.imageHint;
     this.category = p.category || '';
@@ -80,7 +92,7 @@ export class ProductModel implements IProduct {
     const where: any = {};
     if (query?.category) {
       if (typeof query.category === 'object' && query.category.$regex) {
-        where.category = { contains: query.category.$regex, mode: 'insensitive' };
+        where.category = { contains: query.category.$regex };
       } else {
         where.category = query.category;
       }
@@ -96,13 +108,13 @@ export class ProductModel implements IProduct {
       const orList: any[] = [];
       for (const cond of query.$or) {
         if (cond.name && cond.name.$regex) {
-          orList.push({ name: { contains: cond.name.$regex, mode: 'insensitive' } });
+          orList.push({ name: { contains: cond.name.$regex } });
         }
         if (cond.description && cond.description.$regex) {
-          orList.push({ description: { contains: cond.description.$regex, mode: 'insensitive' } });
+          orList.push({ description: { contains: cond.description.$regex } });
         }
         if (cond.category && cond.category.$regex) {
-          orList.push({ category: { contains: cond.category.$regex, mode: 'insensitive' } });
+          orList.push({ category: { contains: cond.category.$regex } });
         }
       }
       if (orList.length > 0) {
@@ -175,10 +187,13 @@ export class ProductModel implements IProduct {
       const rawUpdate = update.$set || update;
 
       if (rawUpdate.name !== undefined) data.name = rawUpdate.name;
+      if (rawUpdate.nameTamil !== undefined) data.nameTamil = rawUpdate.nameTamil;
+      if (rawUpdate.aliases !== undefined) data.aliases = rawUpdate.aliases;
       if (rawUpdate.slug !== undefined) data.slug = rawUpdate.slug;
       if (rawUpdate.description !== undefined) data.description = rawUpdate.description;
       if (rawUpdate.price !== undefined) data.price = rawUpdate.price;
       if (rawUpdate.pricePerKg !== undefined) data.pricePerKg = rawUpdate.pricePerKg;
+      if (rawUpdate.unit !== undefined) data.unit = rawUpdate.unit;
       if (rawUpdate.imageUrl !== undefined) data.imageUrl = rawUpdate.imageUrl;
       if (rawUpdate.imageHint !== undefined) data.imageHint = rawUpdate.imageHint;
       if (rawUpdate.category !== undefined) data.category = rawUpdate.category;
@@ -269,10 +284,13 @@ export class ProductModel implements IProduct {
     const p = await prisma.product.create({
       data: {
         name: data.name,
+        nameTamil: data.nameTamil || null,
+        aliases: data.aliases || null,
         slug: data.slug,
         description: data.description,
         price: data.price,
         pricePerKg: data.pricePerKg || 0,
+        unit: data.unit || 'piece',
         imageUrl: data.imageUrl,
         imageHint: data.imageHint,
         category: data.category,
@@ -296,10 +314,13 @@ export class ProductModel implements IProduct {
       where: { id: this._id },
       data: {
         name: this.name,
+        nameTamil: this.nameTamil ?? null,
+        aliases: this.aliases ?? null,
         slug: this.slug,
         description: this.description,
         price: this.price,
         pricePerKg: this.pricePerKg,
+        unit: this.unit,
         imageUrl: this.imageUrl,
         imageHint: this.imageHint,
         category: this.category,

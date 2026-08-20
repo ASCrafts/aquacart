@@ -70,6 +70,8 @@ export async function PUT(request: Request, { params }: Props) {
     // 2. Parse FormData
     const formData = await request.formData();
     const name = formData.get('name') as string;
+    const nameTamil = (formData.get('nameTamil') as string) || null;
+    const aliases = (formData.get('aliases') as string) || null;
     const slug = (formData.get('slug') as string)?.toLowerCase().trim();
     const description = formData.get('description') as string;
     const price = parseFloat(formData.get('price') as string);
@@ -81,7 +83,7 @@ export async function PUT(request: Request, { params }: Props) {
     
     // Construct the payload dynamically
     const updatePayload: any = {
-      name, description, price, pricePerKg, category, quantity, stockKg, maxQuantity
+      name, nameTamil, aliases, description, price, pricePerKg, category, quantity, stockKg, maxQuantity
     };
 
     // Handle slug update with uniqueness check

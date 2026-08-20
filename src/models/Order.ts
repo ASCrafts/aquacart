@@ -131,7 +131,7 @@ export class OrderModel implements IOrder {
     if (query?.refundStatus) where.refundStatus = query.refundStatus;
     if (query?.customerEmail) {
       if (typeof query.customerEmail === 'object' && query.customerEmail.$regex) {
-        where.customerEmail = { contains: query.customerEmail.$regex, mode: 'insensitive' };
+        where.customerEmail = { contains: query.customerEmail.$regex };
       } else {
         where.customerEmail = query.customerEmail;
       }
@@ -140,10 +140,10 @@ export class OrderModel implements IOrder {
       const orList: any[] = [];
       for (const cond of query.$or) {
         if (cond._id && cond._id.$regex) {
-          orList.push({ id: { contains: cond._id.$regex, mode: 'insensitive' } });
+          orList.push({ id: { contains: cond._id.$regex } });
         }
         if (cond.razorpayOrderId && cond.razorpayOrderId.$regex) {
-          orList.push({ razorpayOrderId: { contains: cond.razorpayOrderId.$regex, mode: 'insensitive' } });
+          orList.push({ razorpayOrderId: { contains: cond.razorpayOrderId.$regex } });
         }
       }
       if (orList.length > 0) {
@@ -208,7 +208,7 @@ export class OrderModel implements IOrder {
     if (query?.refundStatus) where.refundStatus = query.refundStatus;
     if (query?.customerEmail) {
       if (typeof query.customerEmail === 'object' && query.customerEmail.$regex) {
-        where.customerEmail = { contains: query.customerEmail.$regex, mode: 'insensitive' };
+        where.customerEmail = { contains: query.customerEmail.$regex };
       } else {
         where.customerEmail = query.customerEmail;
       }
@@ -217,10 +217,10 @@ export class OrderModel implements IOrder {
       const orList: any[] = [];
       for (const cond of query.$or) {
         if (cond._id && cond._id.$regex) {
-          orList.push({ id: { contains: cond._id.$regex, mode: 'insensitive' } });
+          orList.push({ id: { contains: cond._id.$regex } });
         }
         if (cond.razorpayOrderId && cond.razorpayOrderId.$regex) {
-          orList.push({ razorpayOrderId: { contains: cond.razorpayOrderId.$regex, mode: 'insensitive' } });
+          orList.push({ razorpayOrderId: { contains: cond.razorpayOrderId.$regex } });
         }
       }
       if (orList.length > 0) {

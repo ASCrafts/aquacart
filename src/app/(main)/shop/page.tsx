@@ -6,22 +6,21 @@ import { redirect } from 'next/navigation';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import ShopSearch from '@/components/products/ShopSearch';
+import { searchProducts } from '@/lib/search';
 
 async function getProducts(search?: string, category?: string) {
   await dbConnect();
   const query: any = {};
-  if (search) {
-    query.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-      { category: { $regex: search, $options: 'i' } },
-    ];
-  }
   if (category && category !== 'all') {
     query.category = category;
   }
   const products = await ProductModel.find(query).sort({ createdAt: -1 }).lean();
-  return JSON.parse(JSON.stringify(products)) as SerializedProduct[];
+  const all = JSON.parse(JSON.stringify(products)) as SerializedProduct[];
+
+  // Ranking happens in memory so a shopper can type English, Tamil or Tanglish
+  // and still land on the right fish — see searchProducts for the scoring.
+  if (!search) return { matches: all, suggestions: [] as SerializedProduct[] };
+  return searchProducts(all, search);
 }
 
 async function getCategories() {
@@ -47,7 +46,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const search = resolvedParams.search;
   const category = resolvedParams.category;
 
-  const products = await getProducts(search, category);
+  const { matches: products, suggestions } = await getProducts(search, category);
   const categories = await getCategories();
 
   return (
@@ -98,20 +97,37 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
         {/* Products Grid */}
         {products.length === 0 ? (
-          <div className="text-center py-20" id="no-products">
-            <div className="w-16 h-16 rounded-2xl bg-aq-surface-container mx-auto flex items-center justify-center mb-4">
-              <SlidersHorizontal className="w-8 h-8 text-aq-outline" />
+          <div id="no-products">
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-aq-surface-container mx-auto flex items-center justify-center mb-4">
+                <SlidersHorizontal className="w-8 h-8 text-aq-outline" />
+              </div>
+              <p className="text-aq-on-surface-variant font-medium">
+                {search || category ? 'No products match your search or filters.' : 'No products found. Please check back later.'}
+              </p>
+              {(search || category) && (
+                <Link
+                  href="/shop"
+                  className="inline-block mt-4 text-sm font-semibold text-aq-primary hover:underline"
+                >
+                  Clear Filters & Search
+                </Link>
+              )}
             </div>
-            <p className="text-aq-on-surface-variant font-medium">
-              {search || category ? 'No products match your search or filters.' : 'No products found. Please check back later.'}
-            </p>
-            {(search || category) && (
-              <Link
-                href="/shop"
-                className="inline-block mt-4 text-sm font-semibold text-aq-primary hover:underline"
-              >
-                Clear Filters & Search
-              </Link>
+
+            {/* Closest fish we could find, so the search is never a dead end. */}
+            {suggestions.length > 0 && (
+              <div className="pb-10" id="search-suggestions">
+                <h2 className="text-lg font-bold text-aq-on-surface mb-1">Did you mean?</h2>
+                <p className="text-sm text-aq-on-surface-variant mb-4">
+                  The closest matches we have for &ldquo;{search}&rdquo;.
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:gap-6">
+                  {suggestions.map((product) => (
+                    <ProductCard key={product._id} product={product} />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         ) : (

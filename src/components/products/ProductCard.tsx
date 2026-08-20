@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Plus, Check } from 'lucide-react';
 import { SerializedProduct } from '@/models/Product';
+import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -109,13 +110,18 @@ export function ProductCard({ product }: ProductCardProps) {
             <h3 className="text-[15px] font-bold text-aq-on-surface leading-snug line-clamp-1 group-hover:text-aq-primary transition-colors duration-200">
               {product.name}
             </h3>
+            {product.nameTamil && (
+              <p className="text-xs text-aq-on-surface-variant/80 leading-snug line-clamp-1">
+                {product.nameTamil}
+              </p>
+            )}
             <p className="text-xs text-aq-on-surface-variant mt-1 line-clamp-2 leading-relaxed flex-grow">
               {product.description}
             </p>
 
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-aq-outline-variant/10">
               <span className="text-lg font-extrabold text-aq-primary tracking-tight">
-                ₹{product.price.toFixed(2)}
+                {formatPrice(product)}
               </span>
 
               <button
