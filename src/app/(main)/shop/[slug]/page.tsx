@@ -1,5 +1,4 @@
-import dbConnect from '@/lib/mongodb';
-import ProductModel from '@/models/Product';
+import { getProductBySlug } from '@/lib/products';
 import ProductDetailClient from './ProductDetailClient';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -8,14 +7,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getProduct(slug: string) {
-  await dbConnect();
-  const product = await ProductModel.findOne({ slug });
-  if (!product) return null;
-  
-  // Serialize complex dates and objects from the database cleanly for props transit
-  return JSON.parse(JSON.stringify(product));
-}
+// Reads the cached catalog, so generateMetadata and the page below share one
+// lookup instead of paying two cross-region round trips per view.
+const getProduct = getProductBySlug;
 
 // ===== Dynamic SEO & OpenGraph Metadata (SSR) =====
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

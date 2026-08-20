@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import ProductModel from '@/models/Product';
 import { auth } from '@/lib/auth';
+import { getAllProducts } from '@/lib/products';
 
 export async function GET() {
   try {
-    await dbConnect();
-    const allProducts = await ProductModel.find({});
-    
+    const allProducts = await getAllProducts();
+
     // Filter out invalid IDs (like we did before)
     const validProducts = allProducts.filter((product) =>
       product._id && typeof product._id === 'string' && product._id.length >= 8

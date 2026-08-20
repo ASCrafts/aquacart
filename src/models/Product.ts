@@ -1,4 +1,19 @@
 import prisma from '@/lib/prisma';
+import { revalidateTag } from 'next/cache';
+
+/**
+ * Drop the cached catalog after any write. Every product mutation in the app
+ * routes through this class (admin CRUD, checkout stock decrements, order
+ * cancellation restocks), so invalidating here covers all of them.
+ * Outside a request context (scripts, tests) revalidateTag is a no-op.
+ */
+function invalidate() {
+  try {
+    revalidateTag('products', { expire: 0 });
+  } catch {
+    // not in a Next request context — nothing to invalidate
+  }
+}
 
 export interface IProduct {
   _id: string;
@@ -217,6 +232,7 @@ export class ProductModel implements IProduct {
         where: { id },
         data,
       });
+      invalidate();
       return new ProductModel(p);
     })();
 
@@ -246,6 +262,7 @@ export class ProductModel implements IProduct {
       if (rawUpdate.availability !== undefined) data.availability = rawUpdate.availability;
 
       const tx = sessionObj?.__tx || prisma;
+      invalidate();
       return await tx.product.updateMany({
         where,
         data,
@@ -266,6 +283,7 @@ export class ProductModel implements IProduct {
     const p = await prisma.product.delete({
       where: { id }
     });
+    invalidate();
     return new ProductModel(p);
   }
 
@@ -301,11 +319,13 @@ export class ProductModel implements IProduct {
         availability: data.availability !== undefined ? data.availability : true,
       }
     });
+    invalidate();
     return new ProductModel(p);
   }
 
   static async deleteMany(query?: any) {
     const result = await prisma.product.deleteMany({});
+    invalidate();
     return { deletedCount: result.count };
   }
 
@@ -331,6 +351,7 @@ export class ProductModel implements IProduct {
         availability: this.availability,
       }
     });
+    invalidate();
     return this;
   }
 }

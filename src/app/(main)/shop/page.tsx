@@ -1,6 +1,6 @@
 import { ProductCard } from '@/components/products/ProductCard';
-import dbConnect from '@/lib/mongodb';
-import ProductModel, { SerializedProduct } from '@/models/Product';
+import { SerializedProduct } from '@/models/Product';
+import { getAllProducts, getCategories } from '@/lib/products';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { Search, SlidersHorizontal } from 'lucide-react';
@@ -9,24 +9,14 @@ import ShopSearch from '@/components/products/ShopSearch';
 import { searchProducts } from '@/lib/search';
 
 async function getProducts(search?: string, category?: string) {
-  await dbConnect();
-  const query: any = {};
-  if (category && category !== 'all') {
-    query.category = category;
-  }
-  const products = await ProductModel.find(query).sort({ createdAt: -1 }).lean();
-  const all = JSON.parse(JSON.stringify(products)) as SerializedProduct[];
+  const all = await getAllProducts();
+  const inCategory =
+    category && category !== 'all' ? all.filter((p) => p.category === category) : all;
 
   // Ranking happens in memory so a shopper can type English, Tamil or Tanglish
   // and still land on the right fish — see searchProducts for the scoring.
-  if (!search) return { matches: all, suggestions: [] as SerializedProduct[] };
-  return searchProducts(all, search);
-}
-
-async function getCategories() {
-  await dbConnect();
-  const categories = await ProductModel.distinct('category');
-  return categories.filter(Boolean) as string[];
+  if (!search) return { matches: inCategory, suggestions: [] as SerializedProduct[] };
+  return searchProducts(inCategory, search);
 }
 
 type SearchParams = Promise<{
@@ -46,8 +36,10 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const search = resolvedParams.search;
   const category = resolvedParams.category;
 
-  const { matches: products, suggestions } = await getProducts(search, category);
-  const categories = await getCategories();
+  const [{ matches: products, suggestions }, categories] = await Promise.all([
+    getProducts(search, category),
+    getCategories(),
+  ]);
 
   return (
     <div className="bg-aq-surface min-h-screen">

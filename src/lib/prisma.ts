@@ -4,6 +4,12 @@ import { seedDatabase } from './seed-helper';
 const prismaClientSingleton = () => {
   const client = new PrismaClient();
 
+  // Development only: the sentinel costs two extra cross-region round trips
+  // (~1s) before the client can serve its first real query, which is pure
+  // latency on every cold serverless start. A production database is not
+  // empty and does not want to self-heal by wiping itself into a seed.
+  if (process.env.NODE_ENV === 'production') return client;
+
   // Run Database Sentinel check asynchronously on startup
   (async () => {
     try {
@@ -44,4 +50,6 @@ const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 export default prisma;
 
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma;
+// Always reuse the client. A cold connect to the database costs ~3.5s, so a
+// second client per process would pay that again for nothing.
+globalThis.prismaGlobal = prisma;
