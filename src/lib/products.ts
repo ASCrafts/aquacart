@@ -36,6 +36,30 @@ export async function getCategories(): Promise<string[]> {
   return [...new Set(products.map((p) => p.category).filter(Boolean))];
 }
 
+/**
+ * Most recently replenished items that are actually buyable.
+ *
+ * Sorted by `restockedAt` (falling back to `createdAt` for rows predating the
+ * column), so a fish restocked this morning outranks one added months ago.
+ * Reads the cached catalog — costs no database round trip.
+ */
+export function pickFreshStock<
+  T extends Pick<SerializedProduct, 'availability' | 'quantity' | 'stockKg' | 'restockedAt' | 'createdAt'>
+>(products: T[], limit = 8): T[] {
+  return products
+    .filter((p) => p.availability && (p.quantity > 0 || p.stockKg > 0))
+    .sort(
+      (a, b) =>
+        new Date(b.restockedAt ?? b.createdAt).getTime() -
+        new Date(a.restockedAt ?? a.createdAt).getTime()
+    )
+    .slice(0, limit);
+}
+
+export async function getFreshStock(limit = 8): Promise<SerializedProduct[]> {
+  return pickFreshStock(await getAllProducts(), limit);
+}
+
 /** Call after any write to a product so the next read refetches. */
 export function invalidateProducts() {
   revalidateTag(PRODUCTS_TAG, { expire: 0 });

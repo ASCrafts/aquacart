@@ -86,6 +86,18 @@ export async function PUT(request: Request, { params }: Props) {
       name, nameTamil, aliases, description, price, pricePerKg, category, quantity, stockKg, maxQuantity
     };
 
+    // Mark a genuine restock. Only an *increase* counts — editing a typo or
+    // correcting a price must not make an item look like today's fresh catch,
+    // and neither must a sale reducing the count.
+    const current = await ProductModel.findById(id);
+    if (
+      current &&
+      ((!isNaN(quantity) && quantity > current.quantity) ||
+        (!isNaN(stockKg) && stockKg > current.stockKg))
+    ) {
+      updatePayload.restockedAt = new Date();
+    }
+
     // Handle slug update with uniqueness check
     if (slug) {
       const existingProduct = await ProductModel.findOne({ slug, _id: { $ne: id } });

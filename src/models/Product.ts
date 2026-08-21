@@ -33,6 +33,7 @@ export interface IProduct {
   reservedStock: number;
   maxQuantity: number;
   availability: boolean;
+  restockedAt?: Date | string | null;
   createdAt: Date;
   updatedAt: Date;
   save(): Promise<IProduct>;
@@ -56,6 +57,7 @@ export interface SerializedProduct {
   reservedStock: number;
   maxQuantity: number;
   availability: boolean;
+  restockedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +80,7 @@ export class ProductModel implements IProduct {
   reservedStock: number;
   maxQuantity: number;
   availability: boolean;
+  restockedAt?: Date | string | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -99,6 +102,7 @@ export class ProductModel implements IProduct {
     this.reservedStock = p.reservedStock || 0;
     this.maxQuantity = p.maxQuantity || 99;
     this.availability = p.availability !== undefined ? p.availability : true;
+    this.restockedAt = p.restockedAt ?? null;
     this.createdAt = p.createdAt || new Date();
     this.updatedAt = p.updatedAt || new Date();
   }
@@ -217,6 +221,7 @@ export class ProductModel implements IProduct {
       if (rawUpdate.reservedStock !== undefined) data.reservedStock = rawUpdate.reservedStock;
       if (rawUpdate.maxQuantity !== undefined) data.maxQuantity = rawUpdate.maxQuantity;
       if (rawUpdate.availability !== undefined) data.availability = rawUpdate.availability;
+      if (rawUpdate.restockedAt !== undefined) data.restockedAt = rawUpdate.restockedAt;
 
       if (update.$inc) {
         if (update.$inc.reservedStock !== undefined) {
@@ -317,6 +322,7 @@ export class ProductModel implements IProduct {
         reservedStock: data.reservedStock || 0,
         maxQuantity: data.maxQuantity || 99,
         availability: data.availability !== undefined ? data.availability : true,
+        restockedAt: data.restockedAt ?? new Date(),
       }
     });
     invalidate();
@@ -349,6 +355,7 @@ export class ProductModel implements IProduct {
         reservedStock: this.reservedStock,
         maxQuantity: this.maxQuantity,
         availability: this.availability,
+        restockedAt: this.restockedAt ? new Date(this.restockedAt) : null,
       }
     });
     invalidate();

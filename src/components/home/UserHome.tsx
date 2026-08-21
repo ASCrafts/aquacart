@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, ArrowRight, Waves, Fish, Shell, Anchor, Star } from 'lucide-react';
 import heroImage from '@/images/UserHome.png';
+import { ProductCard } from '@/components/products/ProductCard';
+import type { SerializedProduct } from '@/models/Product';
 
 const categories = [
   { name: 'Fish', icon: Fish, color: 'from-blue-500 to-blue-600' },
@@ -12,7 +14,11 @@ const categories = [
   { name: 'Lobster', icon: Star, color: 'from-purple-400 to-purple-500' },
 ];
 
-export default function UserHome() {
+export default function UserHome({
+  freshStock = [],
+}: {
+  freshStock?: SerializedProduct[];
+}) {
   return (
     <div className="bg-aq-surface min-h-screen">
       {/* ===== Hero Section ===== */}
@@ -95,6 +101,38 @@ export default function UserHome() {
             ))}
           </div>
         </section>
+
+        {/* ===== Freshly Stocked ===== */}
+        {freshStock.length > 0 && (
+          <section className="mb-10" id="fresh-stock">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-aq-on-surface">Freshly Stocked</h2>
+                <p className="text-xs text-aq-on-surface-variant">
+                  Just landed and ready to deliver
+                </p>
+              </div>
+              <Link
+                href="/shop"
+                className="text-xs font-semibold text-aq-primary flex items-center gap-1 hover:gap-2 transition-all shrink-0"
+              >
+                See All <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            {/* Horizontal on phones so it never pushes the promo below the
+                fold; a plain grid once there is room for it. */}
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x md:grid md:grid-cols-3 lg:grid-cols-4 md:gap-5 md:overflow-visible">
+              {freshStock.slice(0, 8).map((product) => (
+                <div
+                  key={product._id}
+                  className="min-w-[190px] max-w-[190px] snap-start md:min-w-0 md:max-w-none"
+                >
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ===== Promo Banner ===== */}
         <section

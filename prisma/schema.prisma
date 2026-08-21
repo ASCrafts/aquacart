@@ -73,6 +73,10 @@ model Product {
   reservedStock Float      @default(0)
   maxQuantity   Int        @default(99)
   availability  Boolean    @default(true)
+  // Bumped only when stock is replenished, never by a sale. `updatedAt` is
+  // useless for "fresh" because checkout decrements bump it too, which would
+  // make the best-selling items look like the newest catch.
+  restockedAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 

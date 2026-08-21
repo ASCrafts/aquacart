@@ -51,6 +51,7 @@ async function main() {
       imageUrl: fish.imageUrl || placeholder.imageUrl,
       imageHint: fish.imageUrl ? fish.name : placeholder.imageHint,
       availability: (fish.quantity ?? 0) > 0 || fish.stockKg > 0,
+      restockedAt: new Date(),
     };
 
     const existing = await prisma.product.findUnique({ where: { slug } });

@@ -25,6 +25,16 @@ function loadCount(key: string): Promise<number> {
   return promise;
 }
 
+/**
+ * Publish a count we already know (e.g. from a server render) so the badges
+ * skip their own fetch. Resolves the in-flight entry for this key too, which
+ * is what stops the cart page making a third identical /api/cart request.
+ */
+export function primeCartCount(count: number, key: string) {
+  inFlight = { key, promise: Promise.resolve(count) };
+  subscribers.forEach((notify) => notify(count));
+}
+
 /** Call after adding/removing an item so every badge updates immediately. */
 export function refreshCartCount() {
   inFlight = null;

@@ -8,7 +8,8 @@ import { useSession } from 'next-auth/react';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { IProduct } from '@/models/Product';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { primeCartCount } from '@/hooks/useCartCount';
 
 declare global {
   interface Window {
@@ -25,19 +26,39 @@ type Cart = {
   items: CartItem[];
 };
 
-export default function CartView({ userAddresses }: { userAddresses: any[] }) {
+export default function CartView({
+  userAddresses,
+  initialCart = null,
+}: {
+  userAddresses: any[];
+  initialCart?: Cart | null;
+}) {
   const { data: session } = useSession();
-  const [cart, setCart] = useState<Cart | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Seeded from the server render — the cart paints with the page instead of
+  // showing a spinner while the browser refetches rows we already had.
+  const [cart, setCart] = useState<Cart | null>(initialCart);
+  const [isLoading, setIsLoading] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
 
   const defaultAddress = userAddresses.find((addr) => addr.isDefault);
 
   useEffect(() => {
-    if (session) fetchCart();
-  }, [session]);
+    // Only fetch if the server had nothing to hand us (e.g. the session
+    // resolved client-side after a soft navigation).
+    if (session && !initialCart) {
+      setIsLoading(true);
+      fetchCart();
+    }
+  }, [session, initialCart]);
+
+  // Keep the header/bottom-nav badges in step with what we just rendered,
+  // so they don't fire their own /api/cart request for the same data.
+  useEffect(() => {
+    primeCartCount(cart?.items?.length ?? 0, pathname);
+  }, [cart, pathname]);
 
   const fetchCart = async () => {
     try {
