@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useEffect } from 'react';
 import { searchProducts } from '@/lib/search';
+import { useCartCount } from '@/hooks/useCartCount';
 
 const desktopNavLinks = [
   { href: '/', label: 'Home' },
@@ -30,7 +31,7 @@ export default function Header() {
   const router = useRouter();
   const user = session?.user;
   const isAdmin = user?.role === ROLES.ADMIN;
-  const [cartCount, setCartCount] = useState(0);
+  const cartCount = useCartCount();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [allProducts, setAllProducts] = useState<any[]>([]);
@@ -69,21 +70,6 @@ export default function Header() {
   };
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
-
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      try {
-        const res = await fetch('/api/cart');
-        if (res.ok) {
-          const data = await res.json();
-          setCartCount(data?.items?.length || 0);
-        }
-      } catch {
-        // silently fail
-      }
-    };
-    if (session) fetchCartCount();
-  }, [session, pathname]);
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {

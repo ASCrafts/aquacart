@@ -36,3 +36,12 @@
   for = "/workbox-*.js"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# The product catalogue is public, read-only data served from Next's data
+# cache and busted on every write. Letting the CDN hold it for a minute keeps
+# the header's search typeahead instant without ever going stale for long.
+# Scoped deliberately: every other /api/* route is per-user and must not cache.
+[[headers]]
+  for = "/api/products"
+  [headers.values]
+    Cache-Control = "public, max-age=0, s-maxage=60, stale-while-revalidate=300"

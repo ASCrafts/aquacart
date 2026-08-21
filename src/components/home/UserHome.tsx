@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, ArrowRight, Waves, Fish, Shell, Anchor, Star } from 'lucide-react';
-import { motion } from 'framer-motion';
 import heroImage from '@/images/UserHome.png';
 
 const categories = [
@@ -12,20 +11,6 @@ const categories = [
   { name: 'Crab', icon: Anchor, color: 'from-red-400 to-red-500' },
   { name: 'Lobster', icon: Star, color: 'from-purple-400 to-purple-500' },
 ];
-
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
-};
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-  },
-};
 
 export default function UserHome() {
   return (
@@ -45,22 +30,16 @@ export default function UserHome() {
           {/* Hero overlay content */}
           <div className="absolute inset-0 flex items-end justify-center pb-8 md:pb-16 px-4">
             <div className="text-center max-w-2xl">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-2xl md:text-4xl font-extrabold text-white drop-shadow-lg tracking-tight mb-2"
+              <h1
+                className="text-2xl md:text-4xl font-extrabold text-white drop-shadow-lg tracking-tight mb-2 animate-fade-in-up motion-reduce:animate-none"
               >
                 Welcome to AquaCart
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.35 }}
-                className="text-sm md:text-base text-white/80 drop-shadow-md"
+              </h1>
+              <p
+                className="text-sm md:text-base text-white/80 drop-shadow-md animate-fade-in-up motion-reduce:animate-none"
               >
                 Discover premium seafood, delivered fresh today
-              </motion.p>
+              </p>
             </div>
           </div>
         </div>
@@ -68,10 +47,7 @@ export default function UserHome() {
 
       <div className="container -mt-6 relative z-10">
         {/* ===== Search Bar ===== */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
+        <div
           className="mb-8"
         >
           <Link href="/shop" className="block">
@@ -80,14 +56,10 @@ export default function UserHome() {
               <span className="text-sm text-aq-outline">Search for fresh seafood...</span>
             </div>
           </Link>
-        </motion.div>
+        </div>
 
         {/* ===== Popular Categories ===== */}
-        <motion.section
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
+        <section
           className="mb-10"
         >
           <div className="flex items-center justify-between mb-4">
@@ -100,8 +72,12 @@ export default function UserHome() {
             </Link>
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {categories.map((cat) => (
-              <motion.div key={cat.name} variants={fadeInUp}>
+            {categories.map((cat, i) => (
+              <div
+                key={cat.name}
+                className="animate-fade-in-up motion-reduce:animate-none"
+                style={{ animationDelay: `${i * 0.06}s` }}
+              >
                 <Link
                   href="/shop"
                   className="flex flex-col items-center gap-2 min-w-[76px] group"
@@ -115,17 +91,13 @@ export default function UserHome() {
                     {cat.name}
                   </span>
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.section>
+        </section>
 
         {/* ===== Promo Banner ===== */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+        <section
           className="mb-10"
         >
           <Link href="/shop">
@@ -150,14 +122,10 @@ export default function UserHome() {
               </div>
             </div>
           </Link>
-        </motion.section>
+        </section>
 
         {/* ===== Our Story / Quality / Mission ===== */}
-        <motion.section
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-50px' }}
+        <section
           className="pb-10 grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {[
@@ -179,11 +147,11 @@ export default function UserHome() {
               icon: Anchor,
               color: 'bg-amber-50 text-amber-600',
             },
-          ].map((card) => (
-            <motion.div
+          ].map((card, i) => (
+            <div
               key={card.title}
-              variants={fadeInUp}
-              className="aq-card p-6 group"
+              className="aq-card p-6 group animate-fade-in-up motion-reduce:animate-none"
+              style={{ animationDelay: `${i * 0.08}s` }}
             >
               <div
                 className={`w-12 h-12 rounded-xl ${card.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
@@ -192,9 +160,9 @@ export default function UserHome() {
               </div>
               <h3 className="text-lg font-bold text-aq-on-surface mb-2">{card.title}</h3>
               <p className="text-sm text-aq-on-surface-variant leading-relaxed">{card.text}</p>
-            </motion.div>
+            </div>
           ))}
-        </motion.section>
+        </section>
       </div>
     </div>
   );

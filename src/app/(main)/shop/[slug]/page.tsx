@@ -1,4 +1,4 @@
-import { getProductBySlug } from '@/lib/products';
+import { getAllProducts, getProductBySlug } from '@/lib/products';
 import ProductDetailClient from './ProductDetailClient';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -10,6 +10,23 @@ interface PageProps {
 // Reads the cached catalog, so generateMetadata and the page below share one
 // lookup instead of paying two cross-region round trips per view.
 const getProduct = getProductBySlug;
+
+/**
+ * Prerender every product page at build time and serve it from the CDN.
+ * The catalog is small and public (no auth gate on this route, unlike /shop),
+ * so these are plain static HTML — no database round trip on a cold visit.
+ *
+ * Freshness comes from the `products` cache tag: any write through
+ * ProductModel calls revalidateTag, which rebuilds these pages too. A product
+ * added after the build is still served — see dynamicParams below.
+ */
+export async function generateStaticParams() {
+  const products = await getAllProducts();
+  return products.map((p) => ({ slug: p.slug }));
+}
+
+// A slug that did not exist at build time renders on demand rather than 404ing.
+export const dynamicParams = true;
 
 // ===== Dynamic SEO & OpenGraph Metadata (SSR) =====
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

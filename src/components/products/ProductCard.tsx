@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Plus, Check } from 'lucide-react';
 import { SerializedProduct } from '@/models/Product';
 import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { refreshCartCount } from '@/hooks/useCartCount';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -15,14 +15,9 @@ type ProductCardProps = {
   product: SerializedProduct;
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-  },
-};
+// The entrance animation used to come from framer-motion, which costs ~35KB
+// gzipped on the shop's critical path for one fade-in. The `fade-in-up`
+// keyframe in tailwind.config.ts does the same thing with no JavaScript.
 
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
@@ -50,6 +45,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
       if (!res.ok) throw new Error('Failed to add to cart');
 
+      // Push the new count to the header and bottom-nav badges. Without this
+      // the badge only caught up on the next navigation.
+      refreshCartCount();
       setJustAdded(true);
       toast({
         title: 'Added to Cart',
@@ -69,12 +67,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <motion.div
-      variants={cardVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.2 }}
-    >
+    <div className="animate-fade-in-up motion-reduce:animate-none">
       <Link href={`/shop/${product.slug}`} className="block group">
         <div className="aq-card overflow-hidden h-full flex flex-col">
           {/* Image */}
@@ -84,6 +77,7 @@ export function ProductCard({ product }: ProductCardProps) {
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               height={300}
               width={400}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               src={product.imageUrl}
               data-ai-hint={product.imageHint}
             />
@@ -144,6 +138,6 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }

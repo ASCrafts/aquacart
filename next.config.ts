@@ -54,7 +54,25 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Strip the `X-Powered-By` header — a few bytes on every single response.
+  poweredByHeader: false,
+  experimental: {
+    // Rewrite barrel imports (`import { Fish } from 'lucide-react'`) into
+    // direct per-icon imports so the bundler only ships the icons actually
+    // used instead of walking the whole barrel file.
+    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
+  },
   images: {
+    // AVIF first, WebP second, original last. Typically 30-50% smaller than
+    // the JPEG/PNG the source URL serves, at the same visual quality.
+    formats: ['image/avif', 'image/webp'],
+    // Product images are never displayed larger than a card or a detail pane;
+    // trimming the ladder avoids generating and caching sizes nothing requests.
+    imageSizes: [64, 96, 128, 256, 384],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // Optimised images are immutable for a given URL — cache them for a year
+    // instead of Next's 60s default, so repeat visits never re-fetch them.
+    minimumCacheTTL: 31536000,
     remotePatterns: [
       {
         protocol: 'https',

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Loader2, Minus, Plus, ShoppingCart, AlertCircle, ArrowLeft, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -160,12 +159,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Image */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="aq-card-static overflow-hidden"
-          >
+          <div className="aq-card-static overflow-hidden animate-fade-in-left motion-reduce:animate-none">
             <div className="relative aspect-square bg-aq-surface-container">
               <Image
                 src={product.imageUrl}
@@ -179,14 +173,12 @@ export default function ProductDetailClient({ product }: { product: any }) {
                 {product.category}
               </Badge>
             </div>
-          </motion.div>
+          </div>
 
           {/* Product Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-            className="flex flex-col"
+          <div
+            className="flex flex-col animate-fade-in-right motion-reduce:animate-none"
+            style={{ animationDelay: '0.1s' }}
           >
             <h1 className="text-2xl md:text-3xl font-extrabold text-aq-on-surface tracking-tight">
               {product.name}
@@ -259,7 +251,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
                 </p>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Reviews Section */}
