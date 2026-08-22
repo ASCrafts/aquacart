@@ -21,8 +21,20 @@ const getProduct = getProductBySlug;
  * added after the build is still served — see dynamicParams below.
  */
 export async function generateStaticParams() {
-  const products = await getAllProducts();
-  return products.map((p) => ({ slug: p.slug }));
+  try {
+    const products = await getAllProducts();
+    return products.map((p) => ({ slug: p.slug }));
+  } catch (error) {
+    // CI builds run against a mock DATABASE_URL with no server behind it.
+    // Prerendering is an optimisation, not a requirement: return no params and
+    // every product page renders on demand instead (see dynamicParams below).
+    // A build that can reach the database still prerenders the whole catalog.
+    console.warn(
+      '[build] Database unreachable — skipping product prerender, pages will render on demand.',
+      error instanceof Error ? error.message : error
+    );
+    return [];
+  }
 }
 
 // A slug that did not exist at build time renders on demand rather than 404ing.
