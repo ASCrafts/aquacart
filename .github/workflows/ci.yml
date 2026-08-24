@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [ main, master, dev ]
 
+# Least privilege for GITHUB_TOKEN. Without this block the token inherits the
+# repository default, which on many repos is read/write on every scope — a
+# compromised dependency running during `npm install` or the build could then
+# push commits or publish releases. This job only ever needs to read the code.
+permissions:
+  contents: read
+
+# A new push to a branch makes the in-flight run for that branch obsolete;
+# cancelling it frees a runner instead of leaving a stale job holding a token.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     name: Build & Test Suite
@@ -22,7 +35,11 @@ jobs:
           cache: 'npm'
 
       - name: Install Project Dependencies
-        run: npm install --include=dev
+        # `npm ci` installs exactly what package-lock.json pins and fails if the
+        # lockfile and manifest disagree. `npm install` silently resolves new
+        # versions, so a compromised transitive release could land in CI
+        # without any change in the repo.
+        run: npm ci --include=dev
 
       - name: Generate Prisma Client
         run: npx prisma generate

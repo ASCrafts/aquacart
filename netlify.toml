@@ -19,6 +19,31 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Authenticated pages must not be stored by the CDN or the browser at all.
+# Netlify applies the most specific matching rule, so these win over the
+# catch-all above. This mirrors the `no-store` rules in next.config.ts so the
+# guarantee holds whether a response is rendered by Next or served from the
+# edge — it is what stops a signed-in page being replayed from a shared cache.
+[[headers]]
+  for = "/account/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, private"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, private"
+
+[[headers]]
+  for = "/cart"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, private"
+
+[[headers]]
+  for = "/order-success/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, private"
+
 # Content-hashed build assets never change for a given URL — cache forever.
 [[headers]]
   for = "/_next/static/*"

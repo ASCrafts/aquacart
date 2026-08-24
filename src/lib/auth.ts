@@ -66,8 +66,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           accessToken: token,
         };
 
-        console.log('authorize userObject', userObject);
-
         return userObject;
       },
     }),

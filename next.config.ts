@@ -44,6 +44,141 @@ const pwaConfig = withPWA({
 
 import path from 'path';
 
+const isProd = process.env.NODE_ENV === 'production';
+
+// Origins the browser is actually allowed to talk to. Kept next to the CSP so
+// adding a third-party (a new image host, a new payment provider) is a single
+// edit instead of a scavenger hunt.
+const RAZORPAY_SCRIPT = ['https://checkout.razorpay.com', 'https://api.razorpay.com'];
+const RAZORPAY_FRAME = ['https://api.razorpay.com', 'https://checkout.razorpay.com'];
+const RAZORPAY_CONNECT = [
+  'https://api.razorpay.com',
+  'https://lumberjack.razorpay.com',
+  'https://lumberjack-metrics.razorpay.com',
+];
+
+// Mirrors `images.remotePatterns` below, plus the hosts hit by plain <img>
+// tags that never pass through next/image (the DiceBear avatar in the header,
+// Razorpay's own checkout assets).
+const IMAGE_HOSTS = [
+  'https://images.unsplash.com',
+  'https://placehold.co',
+  'https://picsum.photos',
+  'https://drive.google.com',
+  'https://lh3.googleusercontent.com',
+  'https://googleusercontent.com',
+  'https://static.vecteezy.com',
+  'https://api.dicebear.com',
+  'https://*.razorpay.com',
+];
+
+// The admin dashboard opens a WebSocket to this origin. Read at build time so
+// the policy follows the deploy rather than being hardcoded to one host.
+function websocketOrigin(): string[] {
+  const raw = process.env.NEXT_PUBLIC_WSS_URL;
+  if (!raw) return [];
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return [];
+  }
+  // A plain ws:// origin in a production build means the deploy is still
+  // pointed at a dev socket. Allowing it in the policy would achieve nothing
+  // (upgrade-insecure-requests rewrites it anyway) and would quietly hide the
+  // misconfiguration, so surface it at build time instead.
+  if (isProd && parsed.protocol !== 'wss:') {
+    console.warn(
+      `[csp] Ignoring NEXT_PUBLIC_WSS_URL="${raw}": production requires a wss:// origin. ` +
+        'The admin dashboard WebSocket will be blocked until this is fixed.'
+    );
+    return [];
+  }
+  return [parsed.origin];
+}
+
+/**
+ * Content-Security-Policy.
+ *
+ * `script-src` deliberately keeps 'unsafe-inline': Next's App Router streams
+ * the RSC payload through inline `self.__next_f.push(...)` scripts, and the
+ * only way to nonce those is to generate the nonce per request in the proxy —
+ * which opts every route out of static rendering, including the pre-generated
+ * product pages. The policy still pins script *sources* to this origin plus
+ * Razorpay, so an injected `<script src="//evil">` is blocked; what it cannot
+ * stop on its own is reflected inline script. Everything else is locked down.
+ */
+function contentSecurityPolicy(): string {
+  const directives: Record<string, string[]> = {
+    'default-src': ["'self'"],
+    'base-uri': ["'self'"],
+    'object-src': ["'none'"],
+    // Anti-clickjacking. The modern counterpart to X-Frame-Options, which is
+    // still sent below for browsers that predate frame-ancestors.
+    'frame-ancestors': ["'none'"],
+    'form-action': ["'self'"],
+    'script-src': ["'self'", "'unsafe-inline'", ...RAZORPAY_SCRIPT],
+    // Tailwind's runtime CSS vars and Radix's positioning both write inline
+    // style attributes; there is no nonce path for those.
+    'style-src': ["'self'", "'unsafe-inline'"],
+    'img-src': ["'self'", 'data:', 'blob:', ...IMAGE_HOSTS],
+    'font-src': ["'self'", 'data:'],
+    'connect-src': ["'self'", ...RAZORPAY_CONNECT, ...websocketOrigin()],
+    'frame-src': ["'self'", ...RAZORPAY_FRAME],
+    // next-pwa registers the Workbox service worker from a blob in some paths.
+    'worker-src': ["'self'", 'blob:'],
+    'manifest-src': ["'self'"],
+    'media-src': ["'self'"],
+  };
+
+  if (!isProd) {
+    // Webpack HMR evaluates chunks and talks to the dev server over ws://.
+    directives['script-src'].push("'unsafe-eval'");
+    directives['connect-src'].push('ws:', 'wss:', 'http://localhost:*');
+  }
+
+  const serialized = Object.entries(directives)
+    .map(([name, values]) => `${name} ${values.join(' ')}`)
+    .join('; ');
+
+  // Only meaningful over TLS, and it would break the http dev server.
+  return isProd ? `${serialized}; upgrade-insecure-requests` : serialized;
+}
+
+const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: contentSecurityPolicy(),
+  },
+  // Legacy anti-clickjacking header. Redundant with frame-ancestors on any
+  // current browser, but scanners and old clients still look for it.
+  { key: 'X-Frame-Options', value: 'DENY' },
+  // Stops the browser from second-guessing Content-Type, which is how a
+  // user-uploaded file gets re-interpreted as script.
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  // Deny the powerful APIs this app never uses, so injected code cannot ask.
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=(), payment=(self), usb=(), magnetometer=(), gyroscope=(), interest-cohort=()',
+  },
+  { key: 'X-DNS-Prefetch-Control', value: 'on' },
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+];
+
+// HSTS is only added in production: sending it from the http dev server would
+// pin localhost to https in the developer's browser for a year.
+const productionOnlyHeaders = isProd
+  ? [
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      },
+    ]
+  : [];
+
+
+
 const nextConfig: NextConfig = {
   /* config options here */
   webpack: (config) => {
@@ -56,6 +191,35 @@ const nextConfig: NextConfig = {
   },
   // Strip the `X-Powered-By` header — a few bytes on every single response.
   poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        // Every route: documents, API responses and static assets alike.
+        source: '/:path*',
+        headers: [...securityHeaders, ...productionOnlyHeaders],
+      },
+      {
+        // Authenticated surfaces must never be written to a shared or disk
+        // cache — this is what "Retrieved from Cache" flags when a signed-in
+        // page is replayed from a proxy or the browser's back/forward store.
+        source: '/(account|admin|cart|order-success|checkout)/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, private' },
+          { key: 'Pragma', value: 'no-cache' },
+        ],
+      },
+      {
+        // Same reasoning for the per-user API surface. /api/products is the
+        // one deliberate exception (public catalogue, CDN-cached) and is
+        // excluded by the negative lookahead.
+        source: '/api/((?!products).*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, private' },
+          { key: 'Pragma', value: 'no-cache' },
+        ],
+      },
+    ];
+  },
   experimental: {
     // Rewrite barrel imports (`import { Fish } from 'lucide-react'`) into
     // direct per-icon imports so the bundler only ships the icons actually
