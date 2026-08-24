@@ -5,7 +5,9 @@ import url from 'url';
 import { ROLES } from '@/lib/constants';
 import jwt from 'jsonwebtoken';
 
-const PORT = parseInt(process.env.WS_PORT || '3001', 10);
+// Accepts WSS_PORT (the name used in .env and netlify.toml) and falls back to
+// the older WS_PORT so an existing deployment keeps working.
+const PORT = parseInt(process.env.WSS_PORT || process.env.WS_PORT || '3001', 10);
 
 const server = http.createServer((req, res) => {
     // HTTP server for broadcasting
@@ -37,7 +39,10 @@ const adminClients = new Set<WebSocket>();
 const secret = process.env.NEXTAUTH_SECRET;
 
 server.on('upgrade', async (request, socket, head) => {
-    console.log('Received upgrade request for URL:', request.url);
+    // Log the path only. The full URL carries the admin's signed JWT in the
+    // `token` query parameter, and process logs are far more widely readable
+    // than the session itself — printing it here would hand out admin access.
+    console.log('Received upgrade request for path:', url.parse(request.url || '').pathname);
     const { query } = url.parse(request.url || '', true);
     const token = query.token as string;
 

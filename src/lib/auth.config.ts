@@ -1,5 +1,5 @@
 import type { NextAuthConfig } from 'next-auth';
-import { ROLES } from './constants';
+import { ROLES, SESSION_MAX_AGE_SECONDS } from './constants';
 
 
 // Production runs behind TLS, so every auth cookie carries `Secure` and the
@@ -51,6 +51,12 @@ const cookies = {
 export const authConfig = {
   useSecureCookies,
   cookies,
+  // Bounded explicitly rather than relying on the library default, so the
+  // session and the access token it carries expire on the same clock.
+  session: {
+    strategy: 'jwt' as const,
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  },
   pages: {
     signIn: '/login',
   },

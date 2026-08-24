@@ -174,7 +174,7 @@ export function RegisterForm() {
               <input
                 id="reg-phone"
                 className="aq-input h-12 px-4 text-sm"
-                placeholder="+1234567890"
+                placeholder="+91 98765 43210"
                 type="tel"
                 disabled={isEmailVerified}
                 {...form.register('phone')}

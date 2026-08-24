@@ -19,3 +19,13 @@ export const PAYMENT_STATUS = {
   FAILED: 'Failed',
   REFUNDED: 'Refunded',
 };
+
+// Session and access-token lifetime, in seconds. NextAuth's own default is 30
+// days; keeping both on one constant stops the session from outliving the
+// access token it carries (which would leave the token rejected while the user
+// still appears signed in).
+export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
+// Re-mint the access token once it is within this long of expiring, so an
+// actively-used session always carries a valid one.
+export const ACCESS_TOKEN_REFRESH_WINDOW_SECONDS = 24 * 60 * 60;
