@@ -444,25 +444,30 @@ export default function AdminDashboard() {
     { icon: typeof Wifi; label: string; className: string }
   > = {
     connected: { icon: Wifi, label: 'Live', className: 'text-aq-tertiary' },
-    connecting: { icon: Loader2, label: 'Connecting…', className: 'text-aq-primary animate-spin motion-reduce:animate-none' },
+    connecting: { icon: Loader2, label: 'Connecting', className: 'text-aq-primary' },
     reconnecting: {
       icon: RefreshCw,
-      label: reconnectAttempt > 1 ? `Reconnecting… (attempt ${reconnectAttempt})` : 'Reconnecting…',
-      className: 'text-amber-600 dark:text-amber-400 animate-spin motion-reduce:animate-none',
+      label: reconnectAttempt > 1 ? `Reconnecting (${reconnectAttempt})` : 'Reconnecting',
+      className: 'text-amber-600',
     },
     disconnected: { icon: WifiOff, label: 'Offline', className: 'text-aq-error' },
   };
   const status = statusMeta[connection];
   const StatusIcon = status.icon;
+  // Spin the icon only. Spinning the whole label rotated the text itself.
+  const spinning = connection === 'connecting' || connection === 'reconnecting';
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex flex-wrap items-center justify-between gap-2">
-            <span>Live Order Feed</span>
-            <span className={`flex items-center gap-1.5 text-sm font-semibold ${status.className}`}>
-              <StatusIcon className="h-4 w-4" aria-hidden />
+          <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-lg">
+            <span>Live feed</span>
+            <span className={`flex items-center gap-1.5 text-xs font-semibold ${status.className}`}>
+              <StatusIcon
+                className={`h-4 w-4 ${spinning ? 'animate-spin motion-reduce:animate-none' : ''}`}
+                aria-hidden
+              />
               {status.label}
             </span>
           </CardTitle>
@@ -534,10 +539,10 @@ export default function AdminDashboard() {
           ))}
 
           {feed.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed py-16 text-center">
-              <Bell className="mx-auto h-12 w-12 text-aq-on-surface-variant" aria-hidden />
-              <p className="mt-4 text-aq-on-surface-variant">
-                {syncing ? 'Loading recent orders…' : 'Waiting for new orders…'}
+            <div className="flex items-center gap-3 rounded-xl bg-aq-surface-container-low px-4 py-3">
+              <Bell className="h-5 w-5 shrink-0 text-aq-on-surface-variant" aria-hidden />
+              <p className="text-sm text-aq-on-surface-variant">
+                {syncing ? 'Loading recent orders…' : 'No new orders yet. They appear here as they come in.'}
               </p>
             </div>
           ) : (
@@ -573,40 +578,6 @@ export default function AdminDashboard() {
           )}
         </CardContent>
       </Card>
-
-      {/* Admin Tools Links */}
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Management</CardTitle>
-            <CardDescription>
-              View and manage all customer orders, refunds, and cancellations in the dedicated order management portal.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/admin/orders">Go to Order Management</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span>AI Inventory Agent</span>
-              <span className="aq-badge aq-badge-success text-[10px] uppercase font-bold tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">AI Powered</span>
-            </CardTitle>
-            <CardDescription>
-              Analyze invoices, shelf tags, or product images with voice commands to add stock and update prices.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-              <Link href="/admin/inventory-agent">Launch AI Agent</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
     </>
   );
 }

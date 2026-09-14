@@ -272,6 +272,23 @@ const nextConfig: NextConfig = {
     // used instead of walking the whole barrel file.
     optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
   },
+  // withPWA() (below) injects a `webpack()` config function so it can hook
+  // service-worker generation into the build. Next 16 refuses to start
+  // Turbopack at all when it sees an unrecognised `webpack` key — it doesn't
+  // ignore it, it exits with "This build is using Turbopack, with a webpack
+  // config and no turbopack config" — which is why `npm run dev` used to pass
+  // `--webpack` explicitly. That forced EVERY dev route onto the slow legacy
+  // compiler (each first hit: several seconds; Turbopack: under a second),
+  // which is most of what "the app feels slow" was.
+  //
+  // The empty object here is the acknowledgement Next asks for. It's safe
+  // because the thing the webpack key exists FOR — writing sw.js — is itself
+  // `disable: NODE_ENV === 'development'` a few lines down, so the webpack
+  // hook is inert in dev regardless of which bundler runs it. Production
+  // (`next build --webpack`, unchanged) still needs the real webpack build
+  // to generate the service worker — Turbopack does not support that plugin
+  // for production output.
+  turbopack: {},
   images: {
     // AVIF first, WebP second, original last. Typically 30-50% smaller than
     // the JPEG/PNG the source URL serves, at the same visual quality.

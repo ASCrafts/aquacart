@@ -283,16 +283,14 @@ export default function MultimodalInventoryAgent() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 max-w-7xl mx-auto py-4 px-4 sm:px-6">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
       {/* ─── Column 1 & 2: Captures & Live Feed ─── */}
-      <div className="xl:col-span-2 space-y-6">
-        <div className="glass-strong border border-aq-outline-variant/20 rounded-3xl p-6 shadow-aq-lg">
-          <div className="flex items-center justify-between mb-5">
+      <div className="xl:col-span-2 space-y-4 md:space-y-6">
+        <div className="rounded-2xl border border-aq-outline-variant/40 bg-aq-surface-container-lowest p-4 shadow-sm md:p-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-aq-primary flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white animate-pulse" />
-              </div>
-              <h2 className="text-lg font-bold text-aq-on-surface">Multimodal Inventory Capture</h2>
+              <Sparkles className="w-5 h-5 text-aq-primary" />
+              <h2 className="text-base font-bold text-aq-on-surface">Capture</h2>
             </div>
             {hasProcessed && (
               <span className="text-[11px] font-bold uppercase tracking-wider text-aq-tertiary bg-aq-tertiary-fixed/30 px-3 py-1 rounded-full flex items-center gap-1">

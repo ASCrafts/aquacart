@@ -1,110 +1,62 @@
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
+const COLUMNS = [
+  {
+    title: 'Shop',
+    links: [
+      { href: '/shop', label: 'All seafood' },
+      { href: '/shop?category=Fish', label: 'Fish' },
+      { href: '/shop?category=Prawns', label: 'Prawns' },
+      { href: '/shop?category=Crab', label: 'Crab' },
+    ],
+  },
+  {
+    title: 'Account',
+    links: [
+      { href: '/account', label: 'My orders' },
+      { href: '/cart', label: 'Cart' },
+      { href: '/login', label: 'Sign in' },
+    ],
+  },
+];
 
-export default function Footer() {
+export default function Footer({ className }: { className?: string }) {
   return (
-    <footer className="bg-aq-on-surface text-white mt-auto" id="main-footer">
-      {/* Wave separator */}
-      <div className="relative h-12 bg-aq-surface overflow-hidden">
-        <svg
-          viewBox="0 0 1440 48"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="absolute bottom-0 w-full"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0 48h1440V16c-120 10-240 20-360 16S840 8 720 12 480 32 360 32 120 22 0 16v32z"
-            fill="#181c20"
-          />
-        </svg>
-      </div>
-
-      <div className="container py-12 md:py-16">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg tracking-tight">AquaCart</span>
-            </div>
-            <p className="text-sm text-white/60 leading-relaxed max-w-xs">
-              Premium sustainable seafood, sourced daily from local fishermen and delivered fresh to your doorstep.
+    <footer className={cn('mt-auto border-t border-aq-outline-variant/40 bg-aq-surface-container-lowest', className)} id="main-footer">
+      <div className="container py-10">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          <div className="col-span-2 space-y-2">
+            <p className="text-lg font-extrabold tracking-tight text-aq-on-surface">AquaCart</p>
+            <p className="max-w-xs text-sm leading-relaxed text-aq-on-surface-variant">
+              Today&apos;s catch, sold by the kilo. Order by 7:30 PM for delivery today.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white/40 mb-4">
-              Quick Links
-            </h3>
-            <ul className="space-y-3">
-              {[
-                { href: '/shop', label: 'Shop All' },
-                { href: '/account', label: 'My Account' },
-                { href: '/cart', label: 'Shopping Cart' },
-              ].map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/60 hover:text-aq-tertiary-fixed transition-colors duration-200"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* About */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white/40 mb-4">
-              About
-            </h3>
-            <ul className="space-y-3">
-              {['Our Story', 'Sustainability', 'Quality Promise'].map((item) => (
-                <li key={item}>
-                  <span className="text-sm text-white/60 hover:text-aq-tertiary-fixed transition-colors duration-200 cursor-pointer">
-                    {item}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white/40 mb-4">
-              Get in Touch
-            </h3>
-            <ul className="space-y-3">
-              <li className="text-sm text-white/60">hello@aquacart.com</li>
-              <li className="text-sm text-white/60">+1 (555) 123-4567</li>
-            </ul>
-            {/* Social links */}
-            <div className="flex items-center gap-3 mt-5">
-              {['twitter', 'instagram', 'facebook'].map((social) => (
-                <span
-                  key={social}
-                  className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-aq-primary-container transition-colors duration-200 cursor-pointer"
-                >
-                  <span className="text-xs font-bold text-white/80 uppercase">
-                    {social.charAt(0)}
-                  </span>
-                </span>
-              ))}
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-aq-on-surface-variant">
+                {column.title}
+              </h3>
+              <ul className="space-y-2">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-aq-on-surface transition-colors hover:text-aq-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-white/40">
-            © {new Date().getFullYear()} AquaCart. All rights reserved.
-          </p>
-          <p className="text-xs text-white/40">
-            Crafted with 🌊 for seafood lovers
-          </p>
-        </div>
+        <p className="mt-8 border-t border-aq-outline-variant/40 pt-6 text-xs text-aq-on-surface-variant">
+          © {new Date().getFullYear()} AquaCart
+        </p>
       </div>
     </footer>
   );

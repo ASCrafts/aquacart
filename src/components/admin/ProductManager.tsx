@@ -13,22 +13,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ProductForm, { type ProductFormInitialData } from './ProductForm';
 
 /**
  * The admin's whole catalog: identity and order rules only. Creating a fish
  * here gives it NO stock and NO sellable price for any day — that is
- * declared separately, per business day, on /admin/stock. This is why there
- * is no "stock" column below: there is no such thing as "the" stock of a
- * fish any more, only today's row and tomorrow's plan.
+ * declared separately, per business day, on /admin/stock.
  *
- * One row, one card, on every screen — the same reason StockRow.tsx gives:
- * a `<table>` forces six columns to fight for space on a 375px screen (name,
- * category, price, order range, listed, actions all end up truncated or
- * scrolling sideways), where a card just stacks them. The listed toggle and
- * both action buttons are full 44px touch targets, not the 24px ghost-icon
- * buttons a desktop table can get away with.
+ * One card per fish on every screen: a table forces six columns to fight for
+ * 375px, a card just stacks them. The listed switch and both action buttons
+ * are full 44px touch targets.
  */
 
 /** What GET /api/admin/products returns — a raw Prisma Product, JSON-round-tripped. */
@@ -133,118 +127,111 @@ export default function ProductManager() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-aq-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-aq-primary" />
       </div>
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <CardTitle>Manage products</CardTitle>
-            <CardDescription>
-              Identity and order rules only — today&apos;s kilos and price live on{' '}
-              <Link href="/admin/stock" className="font-medium text-aq-primary underline">
-                the stock sheet
-              </Link>
-              .
-            </CardDescription>
-          </div>
+  const listed = products.filter((p) => p.availability).length;
 
-          <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-              <Button className="touch-target h-11" onClick={() => setEditingProduct(null)}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add new
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>{editingProduct ? 'Edit product' : 'Create product'}</DialogTitle>
-                <DialogDescription>
-                  {editingProduct
-                    ? 'Update this fish’s identity and order rules.'
-                    : 'Add a new fish to the catalog. It will not be sellable until its stock is declared on the stock sheet.'}
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm initialData={editingProduct} onSuccess={handleProductSaved} />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {products.length === 0 ? (
-          <p className="py-8 text-center text-aq-on-surface-variant">
-            No products found. Tap &quot;Add new&quot; to create one.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="rounded-xl border border-aq-outline-variant/40 bg-aq-surface-container-low p-3.5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-aq-on-surface">
-                      {product.name}
-                      {product.nameTamil ? (
-                        <span className="ml-1.5 font-normal text-aq-on-surface-variant">
-                          {product.nameTamil}
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="text-xs text-aq-on-surface-variant">
-                      {product.category} · {product.minOrderKg}–{product.maxOrderKg} kg
-                    </p>
-                  </div>
-                  {/* Same slim track as before, min-height:44px would fight the
-                      explicit h-6 and blow the track into an oval — but it now
-                      sits in a >=44px tall tap zone via the button's own padding. */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleListed(product)}
-                    className={`touch-target relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                      product.availability
-                        ? 'bg-emerald-500 focus:ring-emerald-500'
-                        : 'bg-gray-300 focus:ring-gray-400'
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm text-aq-on-surface-variant">
+          {products.length} fish · {listed} listed
+        </p>
+        <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
+          <DialogTrigger asChild>
+            <Button className="touch-target h-11 rounded-full" onClick={() => setEditingProduct(null)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add fish
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>{editingProduct ? 'Edit product' : 'Add a fish'}</DialogTitle>
+              <DialogDescription>
+                {editingProduct
+                  ? 'Update this fish’s identity and order rules.'
+                  : 'It will not be sellable until its stock is declared on the stock sheet.'}
+              </DialogDescription>
+            </DialogHeader>
+            <ProductForm initialData={editingProduct} onSuccess={handleProductSaved} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {products.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-aq-outline-variant py-10 text-center text-sm text-aq-on-surface-variant">
+          No products yet. Tap &quot;Add fish&quot; to create one.
+        </p>
+      ) : (
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className={`rounded-2xl border border-aq-outline-variant/40 bg-aq-surface-container-lowest p-3.5 shadow-sm ${
+                product.availability ? '' : 'opacity-60'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-aq-on-surface">
+                    {product.name}
+                    {product.nameTamil ? (
+                      <span className="ml-1.5 font-normal text-aq-on-surface-variant">{product.nameTamil}</span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-aq-on-surface-variant">
+                    {product.category} · {product.minOrderKg}–{product.maxOrderKg} kg
+                  </p>
+                </div>
+                {/* 44px tap zone outside, 24px track inside — putting
+                    `touch-target` on the track itself stretched it into a blob. */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleListed(product)}
+                  aria-pressed={product.availability}
+                  aria-label={product.availability ? 'Delist from shop' : 'List in shop'}
+                  className="-mr-1.5 -mt-1.5 flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-aq-primary"
+                >
+                  <span
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                      product.availability ? 'bg-emerald-500' : 'bg-gray-300'
                     }`}
-                    aria-label={product.availability ? 'Delist from shop' : 'List in shop'}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
                         product.availability ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
-                  </button>
-                </div>
-
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-aq-on-surface">
-                    ₹{product.basePricePerKg.toFixed(2)}
-                    <span className="font-normal text-aq-on-surface-variant"> base/kg</span>
                   </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="touch-target h-10 px-3 text-xs"
-                      onClick={() => handleEditClick(product)}
-                    >
-                      <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Quick edit
-                    </Button>
-                    <Button variant="outline" className="touch-target h-10 w-10 p-0" asChild>
-                      <Link href={`/admin/products/${product.id}`} title="Open full edit page" aria-label="Open full edit page">
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
+                </button>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold tabular-nums text-aq-on-surface">
+                  ₹{product.basePricePerKg.toFixed(0)}
+                  <span className="text-xs font-normal text-aq-on-surface-variant"> base/kg</span>
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="touch-target h-11 rounded-full px-3 text-xs"
+                    onClick={() => handleEditClick(product)}
+                  >
+                    <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Quick edit
+                  </Button>
+                  <Button variant="outline" className="touch-target h-11 w-11 rounded-full p-0" asChild>
+                    <Link href={`/admin/products/${product.id}`} aria-label="Open full edit page">
+                      <ExternalLink className="h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
