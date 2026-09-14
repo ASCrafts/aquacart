@@ -1,0 +1,1974 @@
+<body __processed_89dc9d8f-3cec-422e-8855-bee08813b2ae__="true" bis_status="ok" bis_frame_id="106">
+<title>Aquacart Catch Cycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+
+<style>
+  :root {
+    --paper:      #F5F8F7;
+    --surface:    #FFFFFF;
+    --surface-2:  #EDF2F1;
+    --ink:        #101B1C;
+    --ink-2:      #33474A;
+    --muted:      #61787A;
+    --line:       #D8E2E1;
+    --line-soft:  #E6EDEC;
+    --accent:     #0B6E6A;
+    --accent-ink: #085653;
+    --accent-wash:#DCEDEB;
+    --on-accent:  #FFFFFF;
+    --spark:      #BE4E1B;
+    --spark-wash: #F7E5DA;
+    --amber:      #94670A;
+    --amber-wash: #F6EBD3;
+    --danger:     #A03528;
+    --danger-wash:#F6E1DD;
+    --grey-wash:  #E7EBEB;
+
+    --shadow: 0 1px 2px rgba(16,27,28,.05), 0 8px 24px -12px rgba(16,27,28,.16);
+
+    --display: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #0A1315;
+      --surface:    #101B1D;
+      --surface-2:  #17262A;
+      --ink:        #E7EFED;
+      --ink-2:      #BACAC9;
+      --muted:      #8CA2A3;
+      --line:       #24373A;
+      --line-soft:  #1B2C2F;
+      --accent:     #58CFC0;
+      --accent-ink: #8BE3D7;
+      --accent-wash:#12312F;
+      --on-accent:  #0A1315;
+      --spark:      #F0906A;
+      --spark-wash: #35201A;
+      --amber:      #DDB05F;
+      --amber-wash: #2E2517;
+      --danger:     #EE9184;
+      --danger-wash:#361D1A;
+      --grey-wash:  #1C2A2C;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0A1315;
+    --surface:    #101B1D;
+    --surface-2:  #17262A;
+    --ink:        #E7EFED;
+    --ink-2:      #BACAC9;
+    --muted:      #8CA2A3;
+    --line:       #24373A;
+    --line-soft:  #1B2C2F;
+    --accent:     #58CFC0;
+    --accent-ink: #8BE3D7;
+    --accent-wash:#12312F;
+    --on-accent:  #0A1315;
+    --spark:      #F0906A;
+    --spark-wash: #35201A;
+    --amber:      #DDB05F;
+    --amber-wash: #2E2517;
+    --danger:     #EE9184;
+    --danger-wash:#361D1A;
+    --grey-wash:  #1C2A2C;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px 96px;
+  }
+
+  @media (min-width: 1080px) {
+    .shell {
+      grid-template-columns: 216px minmax(0, 1fr);
+      gap: 56px;
+      padding: 0 32px 120px;
+    }
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    grid-column: 1 / -1;
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 44px;
+  }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(2.3rem, 6vw, 3.6rem);
+    line-height: 1.04;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin: 0 0 20px;
+  }
+
+  .standfirst {
+    font-size: 1.12rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 60ch;
+    margin: 0 0 32px;
+  }
+
+  .locked {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.4;
+    padding: 6px 11px;
+    border-radius: 3px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+  }
+
+  .chip b {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ---------- rail ---------- */
+
+  .rail { display: none; }
+
+  @media (min-width: 1080px) {
+    .rail {
+      display: block;
+      position: sticky;
+      top: 32px;
+      align-self: start;
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+    .rail ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-left: 1px solid var(--line);
+    }
+    .rail a {
+      display: block;
+      padding: 6px 0 6px 16px;
+      margin-left: -1px;
+      border-left: 2px solid transparent;
+      font-size: 13.5px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s, border-color .15s;
+    }
+    .rail a:hover,
+    .rail a:focus-visible { color: var(--accent); border-left-color: var(--accent); }
+    .rail .rail-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      margin-right: 7px;
+    }
+  }
+
+  /* ---------- flow ---------- */
+
+  main { min-width: 0; display: flex; flex-direction: column; gap: 64px; }
+
+  section { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 24px; }
+
+  .sec-head { display: flex; flex-direction: column; gap: 10px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--spark);
+    margin: 0;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.6rem, 3.4vw, 2.15rem);
+    line-height: 1.12;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h3 {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 1.02rem;
+    letter-spacing: -.005em;
+    margin: 14px 0 -4px;
+    color: var(--ink);
+  }
+
+  h4 {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 11.5px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  p { margin: 0; max-width: var(--measure); }
+
+  a { color: var(--accent); }
+
+  ul, ol.plain { margin: 0; padding-left: 20px; max-width: var(--measure); display: flex; flex-direction: column; gap: 7px; }
+
+  li::marker { color: var(--accent); }
+
+  strong { font-weight: 600; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .875em;
+    background: var(--surface-2);
+    padding: 1.5px 5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.68;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin: 0;
+    overflow-x: auto;
+    color: var(--ink-2);
+  }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  pre .c { color: var(--muted); font-style: italic; }
+  pre .k { color: var(--accent); }
+  pre .s { color: var(--spark); }
+
+  /* ---------- blocks ---------- */
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-wash);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .callout p { max-width: 62ch; }
+
+  .callout.warn { border-left-color: var(--amber); background: var(--amber-wash); }
+
+  /* ---------- findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--line); }
+
+  .finding {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+  }
+
+  @media (min-width: 720px) {
+    .finding { grid-template-columns: 96px 1fr; }
+  }
+
+  .sev {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+    justify-self: start;
+  }
+
+  .sev.bug   { background: var(--danger-wash); color: var(--danger); }
+  .sev.drift { background: var(--amber-wash);  color: var(--amber); }
+  .sev.debt  { background: var(--grey-wash);   color: var(--muted); }
+
+  .finding-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .finding-body p { max-width: 62ch; }
+  .finding-title { font-weight: 600; }
+  .where { font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+
+  /* ---------- tables ---------- */
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+
+  th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td strong { color: var(--ink); }
+
+  .num { font-variant-numeric: tabular-nums; }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .06em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .tag.fresh { background: var(--accent-wash); color: var(--accent-ink); }
+  .tag.day2  { background: var(--amber-wash);  color: var(--amber); }
+  .tag.off   { background: var(--grey-wash);   color: var(--muted); }
+  .tag.gone  { background: var(--danger-wash); color: var(--danger); }
+
+  /* ---------- figure ---------- */
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .fig-frame {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 22px 18px;
+    overflow-x: auto;
+  }
+
+  .fig-frame svg { display: block; width: 100%; min-width: 460px; height: auto; }
+
+  figcaption { font-size: 13px; color: var(--muted); max-width: var(--measure); }
+
+  .svg-label { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .06em; fill: var(--muted); }
+  .svg-title { font-family: "IBM Plex Sans", sans-serif; font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .svg-sub   { font-family: "IBM Plex Sans", sans-serif; font-size: 11.5px; fill: var(--muted); }
+
+  /* ---------- wireframe ---------- */
+
+  .wire {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 780px) {
+    .wire { grid-template-columns: 268px 1fr; align-items: start; }
+  }
+
+  .device {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    box-shadow: var(--shadow);
+  }
+
+  .device-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .device-bar span:first-child { font-weight: 600; font-size: 14px; }
+  .device-bar span:last-child { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+
+  .wrow {
+    display: grid;
+    grid-template-columns: 34px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 9px;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    background: var(--paper);
+  }
+
+  .wrow.pending { border-color: var(--spark); background: var(--spark-wash); }
+
+  .thumb { width: 34px; height: 34px; border-radius: 5px; background: var(--surface-2); }
+
+  .wname { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .wname b { font-size: 13px; font-weight: 600; }
+  .wname span { font-size: 11px; color: var(--muted); }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+
+  .step-btn {
+    width: 27px; height: 27px;
+    border-radius: 5px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-2);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .step-val {
+    min-width: 44px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .savebar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .savebar span:last-child { font-family: var(--mono); font-weight: 400; font-size: 11px; opacity: .85; }
+
+  /* ---------- nutrition mock ---------- */
+
+  .nutri {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--paper);
+    border: 1px solid var(--line-soft);
+    border-radius: 7px;
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .stat-k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .stat-v { font-family: var(--display); font-size: 1.55rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-v small { font-family: var(--body); font-size: .82rem; font-weight: 400; color: var(--muted); margin-left: 2px; }
+
+  .bar { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .bar.b-spark i { background: var(--spark); }
+
+  /* ---------- steps ---------- */
+
+  .phases { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--line); }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  @media (min-width: 720px) {
+    .phase { grid-template-columns: 132px 1fr; gap: 24px; }
+  }
+
+  .phase-n {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .phase-n b { display: block; font-family: var(--display); font-size: 1.5rem; letter-spacing: -.01em; color: var(--ink); font-weight: 600; }
+
+  .phase-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .phase-body ul { padding-left: 18px; gap: 5px; font-size: 14.5px; }
+
+  footer {
+    grid-column: 1 / -1;
+    margin-top: 72px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  /* ---------- rev 2/3 additions ---------- */
+
+  .wrow2 {
+    display: grid;
+    grid-template-columns: 28px 1fr 50px 50px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    background: var(--paper);
+  }
+
+  .whead {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .wnum {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    padding: 5px 2px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .wnum.miss { color: var(--spark); border-color: var(--spark); background: var(--spark-wash); }
+  .wnum.plan { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-wash); }
+
+  .tag.plan { background: var(--accent-wash); color: var(--accent-ink); }
+
+  .shortfall {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 9px 11px;
+    border-radius: 6px;
+    background: var(--danger-wash);
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .checklist { list-style: none; padding-left: 0; }
+
+  .checklist li {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .checklist li::before {
+    content: "▢";
+    color: var(--accent);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .rule {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    background: var(--surface);
+  }
+
+  @media (min-width: 640px) { .rule { grid-template-columns: 78px 1fr; } }
+
+  .rule-n {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+
+  .rule-b { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .rule-b p { max-width: 60ch; }
+  .rule-b b { font-weight: 600; }
+
+  .rules { display: flex; flex-direction: column; gap: 10px; }
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <p class="kicker">ASCrafts / aquacart · design brief · rev 3</p>
+    <h1>The catch cycle, the order book, and what happens when the boat comes back light</h1>
+    <p class="standfirst">
+      Six workstreams for Aquacart: price and stock everything in kilos, run the shop as a strict
+      one-day catch cycle with a pre-order book for tomorrow, resolve a short catch without anyone
+      having to think at 5 a.m., collapse product management into one screen, put nutrition on every
+      fish, and open the door to email, username or phone. Grounded in the code at <code>9812bcf</code>.
+    </p>
+    <div class="locked">
+      <span class="chip"><b>Unit</b> kilograms, one pool</span>
+      <span class="chip"><b>Day</b> 04:00 → 04:00 IST</span>
+      <span class="chip"><b>Cutoff</b> 19:30 — after that you're buying tomorrow</span>
+      <span class="chip"><b>Day 2</b> none — today's catch or nothing</span>
+      <span class="chip"><b>Short catch</b> FIFO, auto-refund at 08:00</span>
+      <span class="chip"><b>Login</b> email / username / phone</span>
+      <span class="chip"><b>Verify</b> Firebase phone OTP at signup</span>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Sections">
+    <ol>
+      <li><a href="#state"><span class="rail-num">00</span>What's there now</a></li>
+      <li><a href="#cycle"><span class="rail-num">R1</span>Catch cycle &amp; order book</a></li>
+      <li><a href="#short"><span class="rail-num">R2</span>When the catch is short</a></li>
+      <li><a href="#sheet"><span class="rail-num">R3</span>The morning sheet</a></li>
+      <li><a href="#nutrition"><span class="rail-num">R4</span>Nutrition panels</a></li>
+      <li><a href="#signin"><span class="rail-num">R5</span>Three-key sign-in</a></li>
+      <li><a href="#alerts"><span class="rail-num">R6</span>Alerts &amp; moments</a></li>
+      <li><a href="#slots"><span class="rail-num">07</span>Delivery slots</a></li>
+      <li><a href="#order"><span class="rail-num">08</span>Build order</a></li>
+      <li><a href="#open"><span class="rail-num">09</span>Still open</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- ============ 00 ============ -->
+    <section id="state">
+      <div class="sec-head">
+        <p class="eyebrow">00 · Ground truth</p>
+        <h2>What the code does today</h2>
+      </div>
+      <p>
+        Eight things worth knowing before any of this gets built. Four are live bugs the new
+        features would inherit and amplify, so they get fixed first regardless of where you start.
+        The recent auth hardening — secure cookie prefixes, an <code>exp</code> on the WebSocket
+        access token, no more token logging — is good and stays.
+      </p>
+
+      <div class="findings">
+
+        <div class="finding">
+          <span class="sev bug">Bug</span>
+          <div class="finding-body">
+            <p class="finding-title">The broadcast endpoint has no authentication.</p>
+            <p>
+              <code>POST /broadcast</code> on the WebSocket server accepts any JSON from anyone who
+              can reach the port and fans it out to every connected admin. The upgrade handshake
+              verifies a JWT; the HTTP hook next to it verifies nothing. Bind it to loopback, or
+              require a shared secret header — before it starts carrying order alerts.
+            </p>
+            <p class="where">src/server/websocket.ts:11–28</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev bug">Bug</span>
+          <div class="finding-body">
+            <p class="finding-title">Checkout ignores the unit a customer bought in.</p>
+            <p>
+              <code>CartItem.unit</code> can be <code>'kg'</code>, but checkout validates against
+              <code>product.quantity</code> (pieces), prices with <code>product.price</code> (per
+              piece), and reserves from the piece pool. Order 2&nbsp;kg of seer and you reserve two
+              fish and get charged twice the piece price. Moving to kilos removes the ambiguity
+              rather than patching it.
+            </p>
+            <p class="where">src/app/api/checkout/create/route.ts:49–91</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev bug">Bug</span>
+          <div class="finding-body">
+            <p class="finding-title">The checkout "transaction" is a no-op.</p>
+            <p>
+              <code>mongoose-mock.ts</code> exports a <code>MockSession</code> whose
+              <code>startTransaction</code> and <code>commitTransaction</code> do nothing. Checkout
+              creates the order, then reserves stock, and believes a throw will roll both back.
+              Nothing rolls back. An oversell leaves a pending order and a reservation that never
+              releases.
+            </p>
+            <p class="where">src/lib/mongoose-mock.ts · src/app/api/checkout/create/route.ts</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev bug">Bug</span>
+          <div class="finding-body">
+            <p class="finding-title">Two stock pools for one physical fish.</p>
+            <p>
+              <code>quantity</code> (pieces) and <code>stockKg</code> move independently. Selling a
+              piece never reduces the kilos; selling kilos never reduces the pieces. The same
+              pomfret can be sold twice, once each way, and both numbers still look healthy.
+            </p>
+            <p class="where">prisma/schema.prisma · Product</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev drift">Drift</span>
+          <div class="finding-body">
+            <p class="finding-title">Freshness only updates on one of four write paths.</p>
+            <p>
+              <code>restockedAt</code> is set in the admin <code>PUT</code> and nowhere else. The
+              availability <code>PATCH</code> doesn't touch it, and neither does the AI agent's
+              sync route — so stock added by camera-and-voice never reaches the "Freshly Stocked"
+              rail on the home page.
+            </p>
+            <p class="where">src/app/api/products/[id]/route.ts:98 · src/app/api/admin/inventory-agent/sync/route.ts</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev drift">Drift</span>
+          <div class="finding-body">
+            <p class="finding-title">The AI sync is not idempotent.</p>
+            <p>
+              It applies <code>{ increment }</code>. Press "Sync" twice, or retry on a flaky harbour
+              connection, and the stock doubles. There is no request key and no before/after record
+              to reconcile against.
+            </p>
+            <p class="where">src/app/api/admin/inventory-agent/sync/route.ts</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev debt">Debt</span>
+          <div class="finding-body">
+            <p class="finding-title">A Mongoose-shaped shim sits over Prisma.</p>
+            <p>
+              <code>models/Product.ts</code> and <code>models/User.ts</code> reimplement
+              <code>findByIdAndUpdate</code>, <code>$inc</code> and friends on top of Prisma. It
+              works, but it hides exactly the primitives this design needs — conditional updates and
+              real transactions. Stock and auth paths should call Prisma directly; the rest can stay
+              until it's in the way.
+            </p>
+            <p class="where">src/models/*.ts</p>
+          </div>
+        </div>
+
+        <div class="finding">
+          <span class="sev debt">Debt</span>
+          <div class="finding-body">
+            <p class="finding-title">Email is required, verified by link, and domain-whitelisted.</p>
+            <p>
+              <code>User.email</code> is unique and non-null, login throws on
+              <code>!isEmailVerified</code>, and <code>ALLOWED_EMAIL_DOMAINS</code> accepts only four
+              providers — which rejects every customer with a work or custom-domain address. All
+              three are replaced in R5 by phone verification.
+            </p>
+            <p class="where">src/lib/auth.ts · src/lib/constants.ts:1</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ R1 ============ -->
+    <section id="cycle">
+      <div class="sec-head">
+        <p class="eyebrow">R1 · Fresh stock</p>
+        <h2>Kilos, one day, and a book for tomorrow</h2>
+      </div>
+
+      <p>
+        Four decisions collapse most of the complexity. Everything is priced and counted in
+        <strong>kilograms</strong>. A catch is sellable for <strong>exactly one business day</strong>
+        — no carry-over, no Day 2, no discounting yesterday's fish. Orders placed after
+        <strong>19:30</strong> are drawn from tomorrow's catch. And because of that, stock stops
+        being one number on a product and becomes <strong>one row per product per day</strong>.
+      </p>
+
+      <h3>One unit: kilograms</h3>
+      <p>
+        Fish is sold by weight in India, so the app should be too. <code>quantity</code>,
+        <code>stockKg</code>, <code>price</code>, <code>pricePerKg</code> and
+        <code>CartItem.unit</code> collapse into <strong>kilos of stock at a price per kilo</strong>.
+        The dual-pool bug disappears because there is only one pool, and the admin types one number
+        per fish instead of two.
+      </p>
+      <ul>
+        <li>Order quantities in 250&nbsp;g steps, with a per-product <code>minOrderKg</code> and <code>maxOrderKg</code> so one customer can't book the whole catch.</li>
+        <li>For items people picture as whole animals — crab, lobster, a single pomfret — keep an optional <code>avgPieceWeight</code> and show <em>"≈ 1 fish, about 600 g"</em> as a <strong>helper under the kg selector</strong>. The transaction stays in kilos; only the explanation is in pieces.</li>
+      </ul>
+
+      <h3>The shape of a day</h3>
+
+      <figure>
+        <div class="fig-frame">
+          <svg viewBox="0 0 700 152" role="img" aria-label="The business day runs 04:00 to 04:00. From 04:00 until the admin declares the catch, today is closed and only tomorrow can be pre-ordered. From the declaration until 19:30, today's catch is on sale. From 19:30 until 04:00, orders are drawn from tomorrow's catch.">
+            <rect x="40" y="52" width="39" height="34" rx="3" fill="var(--grey-wash)" stroke="var(--line)"></rect>
+            <rect x="79" y="52" width="361" height="34" rx="3" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.5"></rect>
+            <rect x="440" y="52" width="220" height="34" rx="3" fill="var(--spark-wash)" stroke="var(--spark)" stroke-width="1.5" stroke-dasharray="5 3"></rect>
+
+            <text x="59" y="74" class="svg-label" text-anchor="middle" fill="var(--muted)">···</text>
+            <text x="259" y="74" class="svg-title" text-anchor="middle" fill="var(--accent-ink)">Today's catch on sale</text>
+            <text x="550" y="74" class="svg-title" text-anchor="middle" fill="var(--spark)">Ordering tomorrow's catch</text>
+
+            <line x1="40" y1="86" x2="40" y2="100" stroke="var(--line)"></line>
+            <line x1="79" y1="86" x2="79" y2="100" stroke="var(--accent)"></line>
+            <line x1="440" y1="86" x2="440" y2="100" stroke="var(--spark)"></line>
+            <line x1="660" y1="86" x2="660" y2="100" stroke="var(--line)"></line>
+
+            <text x="40" y="116" class="svg-label" text-anchor="start">04:00</text>
+            <text x="79" y="116" class="svg-label" text-anchor="start" fill="var(--accent)">DECLARED</text>
+            <text x="440" y="116" class="svg-label" text-anchor="middle" fill="var(--spark)">19:30 CUTOFF</text>
+            <text x="660" y="116" class="svg-label" text-anchor="end">04:00</text>
+
+            <text x="59" y="136" class="svg-sub" text-anchor="middle">closed</text>
+            <text x="259" y="136" class="svg-sub" text-anchor="middle">delivered today</text>
+            <text x="550" y="136" class="svg-sub" text-anchor="middle">delivered tomorrow</text>
+
+            <text x="40" y="32" class="svg-label" fill="var(--muted)">ONE BUSINESS DAY · 1440 MINUTES</text>
+          </svg>
+        </div>
+        <figcaption>
+          Yesterday's rows become unsellable at 04:00 with no admin action. The only manual step in
+          the whole cycle is declaring what landed.
+        </figcaption>
+      </figure>
+
+      <div class="callout warn">
+        <p>
+          <strong>The bug your 19:30 answer exposed.</strong> Rev 2 decided today-vs-tomorrow by
+          comparing the wall-clock hour to the cutoff. That is wrong for every minute between
+          midnight and 04:00: the business day has already rolled back to <em>yesterday</em>, but
+          the clock reads <code>01:00</code>, which is less than <code>19:30</code> — so an order at
+          1 a.m. would be sold yesterday's catch, which no longer exists.
+        </p>
+        <p>
+          The fix is to stop using the wall clock and measure <strong>minutes elapsed since the
+          day started</strong>. 19:30 is 930 minutes into a day that begins at 04:00; anything at or
+          past 930 belongs to tomorrow. Verified across the clock:
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>IST clock</th><th>Business day</th><th>Minutes in</th><th>Wall-clock rule</th><th>Elapsed-minutes rule</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">19:29</td><td class="num">Sep 13</td><td class="num">929</td><td>Sep 13</td><td>Sep 13 <span class="tag fresh">OK</span></td></tr>
+            <tr><td class="num">19:31</td><td class="num">Sep 13</td><td class="num">931</td><td>Sep 14</td><td>Sep 14 <span class="tag fresh">OK</span></td></tr>
+            <tr><td class="num">23:59</td><td class="num">Sep 13</td><td class="num">1199</td><td>Sep 14</td><td>Sep 14 <span class="tag fresh">OK</span></td></tr>
+            <tr><td class="num">00:00</td><td class="num">Sep 13</td><td class="num">1200</td><td>Sep 13 <span class="tag gone">WRONG</span></td><td>Sep 14 <span class="tag fresh">OK</span></td></tr>
+            <tr><td class="num">03:59</td><td class="num">Sep 13</td><td class="num">1439</td><td>Sep 13 <span class="tag gone">WRONG</span></td><td>Sep 14 <span class="tag fresh">OK</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+<pre><code><span class="c">// src/lib/business-day.ts — every time question answered in one place</span>
+<span class="k">export const</span> DAY_START_MIN = 4 * 60;          <span class="c">// 04:00 IST</span>
+<span class="k">export const</span> CUTOFF_MIN    = 19 * 60 + 30;   <span class="c">// 19:30 IST wall clock</span>
+<span class="k">export const</span> CUTOFF_ELAPSED = (CUTOFF_MIN - DAY_START_MIN + 1440) % 1440; <span class="c">// 930</span>
+<span class="k">const</span> IST_OFFSET_MIN = 330;
+
+<span class="k">function</span> istMinutes(d: Date) {
+  <span class="k">const</span> ist = <span class="k">new</span> Date(d.getTime() + IST_OFFSET_MIN * 60_000);
+  <span class="k">return</span> ist.getUTCHours() * 60 + ist.getUTCMinutes();
+}
+
+<span class="c">/** "2026-09-13" — the fish day `d` belongs to. */</span>
+<span class="k">export function</span> businessDay(d: Date = <span class="k">new</span> Date()): <span class="k">string</span> {
+  <span class="k">const</span> ist = <span class="k">new</span> Date(d.getTime() + IST_OFFSET_MIN * 60_000);
+  ist.setUTCMinutes(ist.getUTCMinutes() - DAY_START_MIN);
+  <span class="k">return</span> ist.toISOString().slice(0, 10);
+}
+
+<span class="c">/** Minutes elapsed since this business day began. 0 … 1439. */</span>
+<span class="k">export function</span> elapsed(d: Date = <span class="k">new</span> Date()) {
+  <span class="k">return</span> (istMinutes(d) - DAY_START_MIN + 1440) % 1440;
+}
+
+<span class="c">/** Which day's catch fills an order placed now. Never trust the client. */</span>
+<span class="k">export function</span> fulfilDay(d: Date = <span class="k">new</span> Date()): <span class="k">string</span> {
+  <span class="k">const</span> today = businessDay(d);
+  <span class="k">return</span> elapsed(d) &lt; CUTOFF_ELAPSED ? today : addDays(today, 1);
+}</code></pre>
+
+      <h3>Stock is per day, not per product</h3>
+      <p>
+        This is the structural consequence of next-day fulfilment. An order placed at 22:00 must not
+        touch today's fish — it holds a claim on a catch that hasn't landed yet. One number on
+        <code>Product</code> cannot express that.
+      </p>
+
+<pre><code><span class="k">model</span> DayStock {
+  id          String    <span class="s">@id @default(cuid())</span>
+  productId   String
+  day         String    <span class="s">@db.Char(10)</span>   <span class="c">// the catch day this row is for</span>
+
+  planned     Float     <span class="s">@default(0)</span>    <span class="c">// kg expected — the pre-order cap</span>
+  declared    Float     <span class="s">@default(0)</span>    <span class="c">// kg that actually landed — the truth</span>
+  reserved    Float     <span class="s">@default(0)</span>    <span class="c">// kg held by live orders for this day</span>
+  sold        Float     <span class="s">@default(0)</span>    <span class="c">// kg handed over — can never be undone</span>
+  declaredAt  DateTime?                <span class="c">// null = not declared yet; also orders the rail</span>
+  pricePerKg  Float                    <span class="c">// price is per catch, not per product</span>
+
+  <span class="s">@@unique([productId, day])</span>
+  <span class="s">@@index([day])</span>
+}</code></pre>
+
+      <p>
+        Note <code>pricePerKg</code> living here rather than on <code>Product</code>: fish price
+        moves with the catch, and pinning it to the day means an order's price is provably the one
+        that was displayed, and yesterday's price never leaks into today.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Row</th><th>Sold against</th><th>Storefront</th><th>Fresh rail</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Today, <code>declaredAt</code> set</td>
+              <td class="num"><code>declared − reserved</code></td>
+              <td><span class="tag fresh">Buyable · "Landed today"</span></td>
+              <td>Yes, newest declaration first</td>
+            </tr>
+            <tr>
+              <td>Today, not yet declared</td>
+              <td class="num">nothing</td>
+              <td><span class="tag off">"Landing now — back by 6 AM"</span></td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>Tomorrow, <code>planned</code> &gt; 0</td>
+              <td class="num"><code>planned − reserved</code></td>
+              <td><span class="tag plan">Pre-order · "Delivered tomorrow"</span></td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>Any earlier day</td>
+              <td class="num">nothing, ever</td>
+              <td><span class="tag gone">Gone at 04:00</span></td>
+              <td>No</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p>
+          <strong>The one consequence of dropping Day 2:</strong> between 04:00 and the morning
+          declaration, today has nothing to sell. That is correct rather than broken — you have no
+          fish yet — but it must be <em>designed</em>, not discovered. The storefront shows a
+          "landing now" state and keeps tomorrow's pre-orders open, so the shop is never a dead end;
+          and the admin gets a push at 05:00 if today is still undeclared. Traffic in that window is
+          near zero anyway.
+        </p>
+      </div>
+
+      <h3>Declare, don't increment</h3>
+      <p>
+        A stock entry is a <strong>declaration of what is physically on ice right now</strong>, not a
+        delta. Typing <code>12</code> means there are twelve kilos. It never means "add twelve".
+      </p>
+      <ul>
+        <li>Saving twice is harmless. Retrying on a dropped connection is harmless.</li>
+        <li>A mid-day top-up is the same gesture as the morning entry — re-declare the new total.</li>
+        <li>The AI agent's <code>increment</code> bug disappears by construction.</li>
+        <li><strong>Invariant: <code>declared ≥ sold</code>.</strong> You cannot un-sell fish. <code>declared</code> <em>may</em> fall below <code>reserved</code> — that is precisely what raises a short-fall, covered next.</li>
+      </ul>
+      <p>
+        Every declaration writes a <code>StockLog</code> row (<code>productId, day, field, before,
+        after, source, actorId</code>): fifteen lines that answer "who zeroed the pomfret" and "how
+        much did we not sell last week".
+      </p>
+
+      <h3>Reserving stock without the race</h3>
+      <p>
+        Read-then-increment can oversell under concurrency, and the fake transaction means a failure
+        halfway leaves debris. Both are fixed by putting the guard in the <code>WHERE</code> clause
+        inside a real transaction. Which column guards depends on whether the order is for today or
+        tomorrow — decided server-side, never from the client.
+      </p>
+
+<pre><code><span class="k">const</span> day = fulfilDay();
+<span class="k">const</span> col = day === businessDay() ? <span class="s">'declared'</span> : <span class="s">'planned'</span>;
+
+<span class="k">await</span> prisma.$transaction(<span class="k">async</span> (tx) =&gt; {
+  <span class="k">for</span> (<span class="k">const</span> line <span class="k">of</span> lines) {
+    <span class="k">const</span> rows = <span class="k">await</span> tx.$executeRawUnsafe(
+      <span class="s">`UPDATE DayStock SET reserved = reserved + ?
+         WHERE productId = ? AND day = ? AND (${col} - reserved) &gt;= ?`</span>,
+      line.kg, line.productId, day, line.kg,
+    );
+    <span class="k">if</span> (rows === 0) <span class="k">throw new</span> OutOfStock(line.name, day);
+  }
+  <span class="k">await</span> tx.order.create({ data: { ...order, fulfilDay: day } });
+});</code></pre>
+
+      <p>
+        Only <code>col</code> is interpolated and it comes from a two-value branch — never from
+        request data. This also gives a useful property for free: when a short catch leaves
+        <code>declared &lt; reserved</code>, the guard goes negative and <strong>new sales of that
+        fish stop automatically</strong> until the short-fall is resolved. Nobody has to remember to
+        close it.
+      </p>
+      <p>
+        Delete <code>mongoose-mock.ts</code> along the way. A shim that silently pretends to be
+        transactional is worse than no transaction, because the calling code is written as if it
+        were safe.
+      </p>
+    </section>
+
+    <!-- ============ R2 ============ -->
+    <section id="short">
+      <div class="sec-head">
+        <p class="eyebrow">R2 · The hard case</p>
+        <h2>When the boat comes back light</h2>
+      </div>
+
+      <p>
+        You asked me to work this one out rather than decide it cold, so here is the whole chain of
+        reasoning. The situation: customers pre-ordered 6&nbsp;kg of vanjaram for today, their money
+        is already taken through Razorpay, and 4&nbsp;kg landed. Someone owes someone fish or money,
+        and it is 5 a.m.
+      </p>
+
+      <h3>Four things that are true before any rule is chosen</h3>
+      <ul>
+        <li><strong>The money moved first.</strong> Razorpay collects upfront, so a short catch is always a refund question, never a "we'll charge you less" question.</li>
+        <li><strong>An unresolved short-fall is the worst outcome.</strong> Money taken, no fish, no word. Worse than any refund policy. So the resolution cannot depend on the admin being awake and attentive.</li>
+        <li><strong>Only the customer can accept a substitute.</strong> You cannot decide that barracuda replaces seer on their behalf.</li>
+        <li><strong>Partial fish is sometimes fine and sometimes insulting.</strong> 3&nbsp;kg of a 5&nbsp;kg order is a reasonable outcome. 1.2&nbsp;kg of a 5&nbsp;kg order is not — that customer was cooking for a crowd.</li>
+      </ul>
+
+      <h3>The rules that follow</h3>
+
+      <div class="rules">
+        <div class="rule">
+          <div class="rule-n">Rule 1</div>
+          <div class="rule-b">
+            <p><b>Fill in the order people paid, oldest first.</b></p>
+            <p>
+              FIFO by <code>paidAt</code>. It is the only allocation anyone finds fair without
+              explanation, and it is the only one that can't be gamed by order size. Pro-rata was
+              the alternative and it is worse: it converts one disappointed customer into five
+              partly-disappointed ones and five partial refunds.
+            </p>
+          </div>
+        </div>
+
+        <div class="rule">
+          <div class="rule-n">Rule 2</div>
+          <div class="rule-b">
+            <p><b>Part-fill only if it covers at least half the order, and at least <code>minOrderKg</code>.</b></p>
+            <p>
+              Otherwise refund that order in full and pass the fish down the queue. This is the rule
+              that stops a 5&nbsp;kg order from swallowing a 1.2&nbsp;kg catch and leaving the
+              1&nbsp;kg order behind it with nothing — see case E below. Strict FIFO without it
+              produces two unhappy customers where one clean refund and one full delivery was
+              available.
+            </p>
+          </div>
+        </div>
+
+        <div class="rule">
+          <div class="rule-n">Rule 3</div>
+          <div class="rule-b">
+            <p><b>Allocate against <code>declared − sold</code>, not <code>declared</code>.</b></p>
+            <p>
+              Fish already handed over is gone. Re-running allocation after a mid-day re-declaration
+              must never try to claw back a delivered order.
+            </p>
+          </div>
+        </div>
+
+        <div class="rule">
+          <div class="rule-n">Rule 4</div>
+          <div class="rule-b">
+            <p><b>The customer chooses, but a clock guarantees the money moves.</b></p>
+            <p>
+              On short-fall, push immediately: <em>"Vanjaram came up short. Take 3 kg instead of 5
+              (₹2,400 back), swap for sankara, or cancel for a full refund. If we don't hear from
+              you by 08:00 we'll refund automatically."</em> A scheduled job refunds everything
+              unanswered at the deadline. The admin never has to clear a queue for the money to be
+              right.
+            </p>
+          </div>
+        </div>
+
+        <div class="rule">
+          <div class="rule-n">Rule 5</div>
+          <div class="rule-b">
+            <p><b>A substitute is offered at the original line total or less — never more.</b></p>
+            <p>
+              If the swap is cheaper, refund the difference. If it's dearer, the shop absorbs it or
+              doesn't offer it. Charging a second time for a substitute means a fresh Razorpay
+              payment on a fish the customer never asked for, which is both a bad experience and a
+              refund dispute waiting to happen.
+            </p>
+          </div>
+        </div>
+
+        <div class="rule">
+          <div class="rule-n">Rule 6</div>
+          <div class="rule-b">
+            <p><b>Every refund is idempotent and logged.</b></p>
+            <p>
+              Unique key on <code>(orderItemId, reason)</code> plus Razorpay's own idempotency, so
+              the auto-refund job running twice — or a webhook retry — cannot pay twice. Store
+              <code>OrderItem.fulfilledKg</code> and <code>refundedAmount</code>; add
+              <code>'Partial'</code> to the existing <code>refundStatus</code> values.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <h3>The allocation, in full</h3>
+
+<pre><code><span class="k">function</span> allocate(declared: <span class="k">number</span>, sold: <span class="k">number</span>, orders: Line[], minOrderKg: <span class="k">number</span>) {
+  <span class="k">let</span> rem = declared - sold;                <span class="c">// Rule 3</span>
+  <span class="k">for</span> (<span class="k">const</span> o <span class="k">of</span> orders) {              <span class="c">// Rule 1 — sorted by paidAt asc</span>
+    <span class="k">const</span> need = Math.max(minOrderKg, 0.5 * o.kg);   <span class="c">// Rule 2</span>
+    <span class="k">const</span> give = Math.min(o.kg, rem);
+
+    <span class="k">if</span> (give &gt;= o.kg)       { o.state = <span class="s">'FULL'</span>;    o.filled = o.kg; }
+    <span class="k">else if</span> (give &gt;= need)  { o.state = <span class="s">'PARTIAL'</span>; o.filled = give; }
+    <span class="k">else</span>                   { o.state = <span class="s">'SHORT'</span>;   o.filled = 0;    }
+
+    rem -= o.filled;
+  }
+  <span class="k">return</span> { orders, leftover: rem };   <span class="c">// leftover goes on general sale today</span>
+}</code></pre>
+
+      <p>
+        Run over thirty thousand randomised mornings, this holds three invariants with no
+        violations: never allocate more than landed, never mark <code>PARTIAL</code> below the
+        threshold, never allocate anything to a <code>SHORT</code> order. The five cases worth
+        understanding:
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Case</th><th>Landed</th><th>Orders (oldest first)</th><th>Outcome</th><th>Leftover</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>A</strong> catch covers it</td>
+              <td class="num">12.0</td>
+              <td class="num">2.0 · 3.0 · 1.5</td>
+              <td>all <span class="tag fresh">FULL</span></td>
+              <td class="num">5.5 on sale</td>
+            </tr>
+            <tr>
+              <td><strong>B</strong> clean FIFO cut</td>
+              <td class="num">4.0</td>
+              <td class="num">2.0 · 2.0 · 2.0</td>
+              <td>FULL · FULL · <span class="tag gone">refund</span></td>
+              <td class="num">0</td>
+            </tr>
+            <tr>
+              <td><strong>C</strong> stub remainder</td>
+              <td class="num">4.3</td>
+              <td class="num">2.0 · 2.0 · 2.0</td>
+              <td>FULL · FULL · <span class="tag gone">refund</span> — 0.3 kg is below half of 2.0</td>
+              <td class="num">0.3 on sale</td>
+            </tr>
+            <tr>
+              <td><strong>E</strong> big order would starve the queue</td>
+              <td class="num">1.2</td>
+              <td class="num">5.0 · 0.5</td>
+              <td><span class="tag gone">refund</span> · <span class="tag fresh">FULL</span> — Rule 2 passes the fish down</td>
+              <td class="num">0.7 on sale</td>
+            </tr>
+            <tr>
+              <td><strong>F</strong> half-fill is acceptable</td>
+              <td class="num">3.0</td>
+              <td class="num">5.0 · 1.0</td>
+              <td><span class="tag day2">PARTIAL 3.0</span>, 40% refunded · <span class="tag gone">refund</span></td>
+              <td class="num">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Case E is the one worth staring at. Strict FIFO gives the 5&nbsp;kg order a 76% short
+        delivery and the 0.5&nbsp;kg order nothing — two unhappy customers. Rule 2 turns it into one
+        clean refund, one perfect delivery, and 0.7&nbsp;kg left to sell. The rule pays for itself
+        in exactly this shape of morning.
+      </p>
+
+      <h3>Situations the rules have to survive</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Situation</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>More landed than planned</td>
+              <td>Nothing special. <code>planned</code> caps pre-orders; it never caps the catch. Surplus goes on sale for today.</td>
+            </tr>
+            <tr>
+              <td>Admin re-declares lower at noon (miscount)</td>
+              <td>Allocation re-runs against <code>declared − sold</code>. Only orders whose allocation <em>dropped</em> and that haven't been notified get a push — tracked by <code>shortfallNotifiedAt</code> per item, so no one is told twice.</td>
+            </tr>
+            <tr>
+              <td>Customer answers after the 08:00 deadline</td>
+              <td>Refund already issued; the reply is shown as "already refunded" with a link to reorder. No double refund — Rule 6.</td>
+            </tr>
+            <tr>
+              <td>New orders arriving during an unresolved short-fall</td>
+              <td>Blocked automatically: <code>declared − reserved</code> is negative, so the reservation guard fails. As refunds release <code>reserved</code>, capacity reopens on its own.</td>
+            </tr>
+            <tr>
+              <td>No catch at all — storm, boat didn't sail</td>
+              <td>One <strong>"No catch today"</strong> button declares zero across every product and fires the whole short-fall flow at once. Without it the admin is zeroing 26 rows by hand in a panic.</td>
+            </tr>
+            <tr>
+              <td>Customer cancels before the catch lands</td>
+              <td>Free and instant — nothing has been prepared. Releases <code>reserved</code> immediately.</td>
+            </tr>
+            <tr>
+              <td>Short-fall on one line of a multi-fish order</td>
+              <td>Resolved per line. The rest of the order ships; only the short line is refunded or substituted. Order total recalculated from <code>fulfilledKg</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p>
+          <strong>What the admin actually has to do.</strong> Declare the catch. That's it. The
+          allocation runs, the pushes go out, the refunds land at 08:00 whether or not anyone opens
+          the dashboard. The short-fall panel exists so the admin <em>can</em> offer a substitute
+          and see who was affected — not because the system needs them to.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ R3 ============ -->
+    <section id="sheet">
+      <div class="sec-head">
+        <p class="eyebrow">R3 · Admin</p>
+        <h2>One sheet, two columns, one save</h2>
+      </div>
+
+      <p>
+        Today, changing the stock of one fish means opening a dialog with sixteen fields — name,
+        Tamil name, aliases, slug, description, two prices, image upload — and saving all of it.
+        Twenty-six products is twenty-six dialogs. The daily job and the occasional job share one
+        form, and the daily job loses.
+      </p>
+      <p>
+        So split them. <strong>Today's Stock</strong> at <code>/admin/stock</code> becomes the admin
+        landing page and handles the only things that change daily: what landed, what's expected
+        tomorrow, and the price. Everything else moves to <strong>Edit details</strong>, reached from
+        a row and opened maybe once per product per year.
+      </p>
+
+      <h3>The screen</h3>
+
+      <div class="wire">
+        <div class="device" aria-hidden="true">
+          <div class="device-bar"><span>Today's Stock</span><span>SUN 13 SEP</span></div>
+          <div class="shortfall"><span>⚠</span><span>Vanjaram short 2.0 kg — 1 order refunds at 08:00</span></div>
+          <div class="wrow2">
+            <span></span><span></span>
+            <span class="whead">Today</span><span class="whead">Tmrw</span>
+          </div>
+          <div class="wrow2">
+            <div class="thumb" style="width:28px;height:28px"></div>
+            <div class="wname"><b>Seer Fish</b><span>வஞ்சிரம்</span></div>
+            <span class="wnum miss">— kg</span><span class="wnum plan">12.0</span>
+          </div>
+          <div class="wrow2">
+            <div class="thumb" style="width:28px;height:28px"></div>
+            <div class="wname"><b>Silver Pomfret</b><span>வெள்ளி வாவல்</span></div>
+            <span class="wnum">8.0</span><span class="wnum plan">6.0</span>
+          </div>
+          <div class="wrow2">
+            <div class="thumb" style="width:28px;height:28px"></div>
+            <div class="wname"><b>Prawns</b><span>இறால்</span></div>
+            <span class="wnum">3.5</span><span class="wnum">0</span>
+          </div>
+          <div class="savebar"><span>Save 3 changes</span><span>UNDO 10s</span></div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <h4>Ordering — the list sorts itself by what needs attention</h4>
+            <ul>
+              <li><strong>Short-fall first</strong> — pre-orders today's catch can't cover. The refunds are already scheduled; this row is where a substitute can still be offered.</li>
+              <li><strong>Not declared today</strong> next, in <span class="tag off">UNDECLARED</span> — the morning's to-do list, shrinking as you work.</li>
+              <li><strong>Done today</strong> last, <span class="tag fresh">FRESH</span> — collapsed, out of the way.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Per row</h4>
+            <ul>
+              <li>Two numbers, both in kg: what landed today, what you expect tomorrow. The second is the entire pre-order mechanic, exposed as one extra field.</li>
+              <li><strong>Tomorrow is pre-filled</strong> from a rolling median of that fish's recent declarations, so the job is confirming a number rather than inventing one. That is the difference between a column that gets maintained and one that goes stale.</li>
+              <li><code>inputMode="decimal"</code> so phones open the number pad; 44px tap targets for wet hands.</li>
+              <li><strong>Same as yesterday</strong> copies the last declaration. <strong>Nothing today</strong> zeroes in one tap. <strong>No catch today</strong> sits at the top and zeroes everything.</li>
+              <li>Price sits behind a chevron — it changes less often than stock, and hiding it halves the visual noise.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h3>Save semantics</h3>
+      <ul>
+        <li>Edits stay local and mark the row dirty. Nothing hits the network per keystroke.</li>
+        <li>One sticky <strong>Save N changes</strong> bar — bottom on mobile, right-aligned on desktop.</li>
+        <li>One request, one transaction: <code>POST /api/admin/stock-day</code> with <code>{ day, rows: [{ productId, declared?, planned?, pricePerKg? }] }</code>. Declarative, so a retry is safe.</li>
+        <li>The save response returns the allocation result, so the short-fall banner appears in the same round trip as the declaration that caused it.</li>
+        <li>Optimistic UI with rollback on failure, reusing the toast pattern already in <code>ProductManager</code>.</li>
+        <li>A 10-second <strong>Undo</strong> after save — cheaper than a confirm dialog, and it protects against the real error, a fat-fingered zero. Undo also rescinds an allocation, which is why the refund deadline is 08:00 and not immediate.</li>
+        <li>Unsaved edits persist to <code>localStorage</code> keyed by business day. Harbour signal drops; the morning's work shouldn't.</li>
+      </ul>
+
+      <h3>Mobile and desktop from one component</h3>
+      <p>
+        Don't build a card list and a table. Build one <code>StockRow</code> whose grid template
+        changes at the breakpoint: stacked with big steppers under 640px, aligned columns above it.
+        Same markup, same state, same code path — which is why the two will still agree six months
+        from now. On desktop, <kbd>Tab</kbd> walks down the today column and <kbd>Enter</kbd> saves.
+      </p>
+
+      <h3>The AI agent becomes a draft, not a write</h3>
+      <div class="callout">
+        <p>
+          <code>MultimodalInventoryAgent</code> is a good idea sitting on the wrong side of the save.
+          Right now it writes to the database directly, with non-idempotent increments and no review
+          step.
+        </p>
+        <p>
+          Point it at the sheet instead: photograph the crates, say
+          <em>"vanjaram pathu kilo, vaval ettu"</em>, and the agent returns a <strong>draft</strong>
+          that pre-fills those rows as dirty and highlighted. The admin glances, corrects, hits the
+          same Save. The model gets to be fast and occasionally wrong, which is the only safe way to
+          use it — and the declaration semantics make a double-tap harmless.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ R4 ============ -->
+    <section id="nutrition">
+      <div class="sec-head">
+        <p class="eyebrow">R4 · Nutrition</p>
+        <h2>A panel per fish, editable but never blank</h2>
+      </div>
+
+      <p>
+        Nutrition goes in a <code>Json?</code> column on <code>Product</code> so you can edit it from
+        the admin without a deploy. The risk with a JSON column is that it becomes a shape nobody
+        validates — so it gets a Zod schema at the API boundary in both directions, and the renderer
+        <code>safeParse</code>s on read and shows nothing rather than something broken.
+      </p>
+
+<pre><code><span class="c">// src/types/nutrition.ts</span>
+<span class="k">export const</span> NutritionSchema = z.object({
+  basis:        z.literal(<span class="s">'100g_raw'</span>),
+  energyKcal:   z.number().min(0).max(900),
+  protein:      z.number().min(0).max(100),   <span class="c">// g</span>
+  fat:          z.number().min(0).max(100),   <span class="c">// g</span>
+  saturatedFat: z.number().min(0).optional(),
+  omega3Mg:     z.number().min(0).optional(),  <span class="c">// the reason people buy fish</span>
+  cholesterolMg:z.number().min(0).optional(),
+  sodiumMg:     z.number().min(0).optional(),
+  calciumMg:    z.number().min(0).optional(),
+  ironMg:       z.number().min(0).optional(),
+  vitaminDMcg:  z.number().min(0).optional(),
+  vitaminB12Mcg:z.number().min(0).optional(),
+  seleniumMcg:  z.number().min(0).optional(),
+  highlights:   z.array(z.string().max(24)).max(3).optional(),
+  note:         z.string().max(160).optional(),
+});</code></pre>
+
+      <ul>
+        <li><strong>Seed it, don't leave it null.</strong> Ship <code>nutrition-defaults.ts</code> keyed by slug alongside <code>fish-catalog.ts</code>, and have <code>npm run db:import-fish</code> fill any product whose column is empty. Nothing launches blank; admin edits override.</li>
+        <li><strong>Its own tab, not the daily sheet.</strong> Nutrition lives under Edit details → Nutrition. It is annual data; it must not add a field to the screen you just decluttered.</li>
+        <li><strong>Copy from another fish</strong> in the editor. Sardine and mackerel are close enough that starting from one and adjusting beats typing twelve numbers.</li>
+      </ul>
+
+      <h3>What the customer sees</h3>
+      <p>
+        Sits between the description and the reviews on the product page. Macros always visible;
+        micros in a <code>&lt;details&gt;</code> so the mobile page doesn't grow a wall of numbers.
+      </p>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-family:var(--display);font-size:1.2rem;font-weight:600;">Seer Fish · வஞ்சிரம்</div>
+            <div style="font-size:12.5px;color:var(--muted);">Nutrition per 100 g, raw</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="tag fresh">HIGH PROTEIN</span>
+            <span class="tag fresh">OMEGA-3 RICH</span>
+            <span class="tag fresh">LOW FAT</span>
+          </div>
+        </div>
+
+        <div class="nutri">
+          <div class="stat">
+            <span class="stat-k">Protein</span>
+            <span class="stat-v">21.7<small>g</small></span>
+            <span class="bar"><i style="width:72%"></i></span>
+            <span style="font-size:11px;color:var(--muted);">43% of a 50 g daily target</span>
+          </div>
+          <div class="stat">
+            <span class="stat-k">Energy</span>
+            <span class="stat-v">105<small>kcal</small></span>
+            <span class="bar"><i style="width:26%"></i></span>
+            <span style="font-size:11px;color:var(--muted);">5% of 2,000 kcal</span>
+          </div>
+          <div class="stat">
+            <span class="stat-k">Total fat</span>
+            <span class="stat-v">2.0<small>g</small></span>
+            <span class="bar"><i style="width:12%"></i></span>
+            <span style="font-size:11px;color:var(--muted);">3% of 65 g</span>
+          </div>
+          <div class="stat">
+            <span class="stat-k">Omega-3</span>
+            <span class="stat-v">640<small>mg</small></span>
+            <span class="bar b-spark"><i style="width:64%"></i></span>
+            <span style="font-size:11px;color:var(--muted);">Above the catalog median</span>
+          </div>
+        </div>
+
+        <p style="font-size:11.5px;color:var(--muted);max-width:none;">
+          Indicative values for raw fish, before cooking. Not medical or dietary advice.
+        </p>
+      </div>
+
+      <ul>
+        <li><strong>Omega-3 is the hero stat</strong> — it's the reason a customer chooses fish over chicken, and comparing it against the catalog median turns a number into a reason to buy.</li>
+        <li>CSS bars, no chart library. Every bar carries an <code>aria-label</code> with the real value; the number is always present as text, so the bar is decoration, not the only signal.</li>
+        <li><code>tabular-nums</code> throughout so the four tiles line up. Both themes from the same tokens.</li>
+        <li>Keep the fine print. "Indicative, raw, not medical advice" costs one line and closes a real liability gap.</li>
+      </ul>
+    </section>
+
+    <!-- ============ R5 ============ -->
+    <section id="signin">
+      <div class="sec-head">
+        <p class="eyebrow">R5 · Identity</p>
+        <h2>Three keys, one door, Firebase at the gate</h2>
+      </div>
+
+      <p>
+        You've built phone OTP on Firebase in a local directory — it isn't on <code>main</code> at
+        <code>9812bcf</code>, so what follows is the contract it needs to meet rather than a
+        description of what you wrote. <code>firebase</code> and <code>firebase-admin</code> are
+        already in <code>package.json</code>, so no new dependency. The shape that matters:
+        <strong>Firebase proves the phone, NextAuth owns the session.</strong> Keeping those separate
+        is what stops you ending up with two competing identity systems.
+      </p>
+
+      <h3>Identity fields</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Required</th><th>Unique</th><th>Rules</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>username</strong></td><td>Yes</td><td>Yes</td>
+              <td>3–20 chars, <code>a-z 0-9 . _</code>, stored lowercase. <strong>Never all digits</strong> — that rule is what keeps a username from colliding with a phone number at login. Reserve <code>admin</code>, <code>aquacart</code>, <code>support</code>, <code>api</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>phone</strong></td><td>Yes</td><td>Yes</td>
+              <td>Stored canonical as <code>+91XXXXXXXXXX</code>. Normalize on write, always — otherwise <code>98765 43210</code> and <code>+919876543210</code> become two accounts and the duplicate check silently fails.</td>
+            </tr>
+            <tr>
+              <td><strong>phoneVerifiedAt</strong></td><td>Yes</td><td>—</td>
+              <td>Set only by the server after <code>verifyIdToken</code> succeeds. Replaces <code>isEmailVerified</code> as the gate on login.</td>
+            </tr>
+            <tr>
+              <td><strong>email</strong></td><td>No</td><td>When present</td>
+              <td>MySQL permits many NULLs in a unique index, so optional-and-unique needs no special handling. Shape validation only — drop <code>ALLOWED_EMAIL_DOMAINS</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>password</strong></td><td>Yes</td><td>—</td>
+              <td>bcrypt, unchanged. Drop every <code>*VerificationToken</code> / <code>tempEmail*</code> column.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Signup order of operations</h3>
+      <ol class="plain">
+        <li><strong>Check the duplicate before sending the SMS.</strong> <code>POST /api/auth/availability</code> with the normalized phone and username. If the number is already registered, stop — show "This number already has an AquaCart account", offer <em>Log in</em> with the number carried across, and never spend an OTP on a known duplicate. Your original requirement, and also the cheapest guard against SMS abuse.</li>
+        <li><strong>Client runs the Firebase flow.</strong> <code>signInWithPhoneNumber</code> → user types the code → <code>confirmationResult.confirm()</code> → a Firebase ID token.</li>
+        <li><strong>Server verifies the token, not a flag.</strong> <code>getAuth().verifyIdToken(idToken)</code>, then assert all four: <code>decoded.phone_number</code> equals the submitted canonical phone, <code>decoded.aud</code> is your project, <code>auth_time</code> is within ten minutes, and the phone is still unclaimed.</li>
+        <li><strong>Create the user</strong> with <code>phoneVerifiedAt = now()</code>, then <code>signOut()</code> the Firebase client. The app session is NextAuth's.</li>
+      </ol>
+
+      <div class="callout warn">
+        <p>
+          <strong>Two things to check in what you've already built.</strong> First: if the client
+          ever posts something like <code>{ verified: true }</code> and the server trusts it, the
+          whole flow is decorative — anyone can <code>curl</code> past it. Only a server-side
+          <code>verifyIdToken</code> counts.
+        </p>
+        <p>
+          Second: <strong>SMS toll fraud</strong> is the standard attack on Firebase Phone Auth —
+          scripted signups pumping OTPs until your quota is drained. Four settings close it: enable
+          <strong>App Check</strong> (reCAPTCHA Enterprise on web), restrict allowed regions to
+          <strong>India only</strong>, set a daily SMS cap, and rate-limit
+          <code>/api/auth/availability</code> per IP. The region lock alone removes most of it.
+        </p>
+      </div>
+
+      <h3>Resolving what they typed at login</h3>
+      <p>
+        Verification is a signup and reset gate. Login itself stays password-based and accepts any of
+        the three identifiers in one field.
+      </p>
+
+      <figure>
+        <div class="fig-frame">
+          <svg viewBox="0 0 700 172" role="img" aria-label="One input field routes to email if it contains an at sign, to phone if it is ten to thirteen digits after stripping punctuation, otherwise to username; all three resolve to a single user lookup.">
+            <rect x="20" y="62" width="150" height="46" rx="6" fill="var(--surface-2)" stroke="var(--line)"></rect>
+            <text x="95" y="82" class="svg-title" text-anchor="middle">One field</text>
+            <text x="95" y="99" class="svg-sub" text-anchor="middle">"Email, username or phone"</text>
+
+            <path d="M170 85 L214 85 L214 28 L252 28" fill="none" stroke="var(--line)" stroke-width="1.5" marker-end="url(#a2)"></path>
+            <path d="M214 85 L252 85" fill="none" stroke="var(--line)" stroke-width="1.5" marker-end="url(#a2)"></path>
+            <path d="M214 85 L214 142 L252 142" fill="none" stroke="var(--line)" stroke-width="1.5" marker-end="url(#a2)"></path>
+
+            <rect x="252" y="8" width="200" height="40" rx="6" fill="var(--accent-wash)" stroke="var(--accent)"></rect>
+            <text x="266" y="26" class="svg-label" fill="var(--accent-ink)">CONTAINS "@"</text>
+            <text x="266" y="41" class="svg-sub">→ email, lowercased</text>
+
+            <rect x="252" y="65" width="200" height="40" rx="6" fill="var(--spark-wash)" stroke="var(--spark)"></rect>
+            <text x="266" y="83" class="svg-label" fill="var(--spark)">10–13 DIGITS</text>
+            <text x="266" y="98" class="svg-sub">→ phone, to +91 E.164</text>
+
+            <rect x="252" y="122" width="200" height="40" rx="6" fill="var(--surface-2)" stroke="var(--line)"></rect>
+            <text x="266" y="140" class="svg-label">OTHERWISE</text>
+            <text x="266" y="155" class="svg-sub">→ username, lowercased</text>
+
+            <path d="M452 28 L490 28 L490 78" fill="none" stroke="var(--line)" stroke-width="1.5"></path>
+            <path d="M452 85 L490 85" fill="none" stroke="var(--line)" stroke-width="1.5"></path>
+            <path d="M452 142 L490 142 L490 92" fill="none" stroke="var(--line)" stroke-width="1.5"></path>
+            <path d="M490 85 L526 85" fill="none" stroke="var(--line)" stroke-width="1.5" marker-end="url(#a2)"></path>
+
+            <rect x="526" y="62" width="152" height="46" rx="6" fill="var(--surface-2)" stroke="var(--line)"></rect>
+            <text x="602" y="82" class="svg-title" text-anchor="middle">findFirst</text>
+            <text x="602" y="99" class="svg-sub" text-anchor="middle">one indexed lookup</text>
+
+            <defs>
+              <marker id="a2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0 0 L8 4 L0 8 z" fill="var(--line)"></path>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        <figcaption>
+          The classifier is pure and testable — worth a unit test table covering
+          <code>+91 98765 43210</code>, <code>098765 43210</code>, <code>aaqil.k</code> and
+          <code>a@b.co</code>.
+        </figcaption>
+      </figure>
+
+<pre><code><span class="c">// src/lib/identifier.ts</span>
+<span class="k">export function</span> classify(raw: <span class="k">string</span>) {
+  <span class="k">const</span> s = raw.trim();
+  <span class="k">if</span> (s.includes(<span class="s">'@'</span>)) <span class="k">return</span> { kind: <span class="s">'email'</span>, value: s.toLowerCase() };
+
+  <span class="k">const</span> digits = s.replace(/[\s()+-]/g, <span class="s">''</span>);
+  <span class="k">if</span> (/^\d{10,13}$/.test(digits))
+    <span class="k">return</span> { kind: <span class="s">'phone'</span>, value: <span class="s">'+91'</span> + digits.slice(-10) };
+
+  <span class="k">return</span> { kind: <span class="s">'username'</span>, value: s.toLowerCase() };
+}</code></pre>
+
+      <p>
+        In the credentials provider, swap <code>email</code> for <code>identifier</code>, replace the
+        <code>isEmailVerified</code> throw with <code>phoneVerifiedAt</code>, and run a dummy bcrypt
+        compare when no user is found so response timing doesn't leak which accounts exist. Login
+        stays quiet about existence; signup, by design, does not.
+      </p>
+
+      <h3>Password reset — solved by the same flow</h3>
+      <p>
+        Reuse the Firebase OTP: enter the phone, verify, set a new password. The server accepts the
+        reset only if <code>verifyIdToken</code> succeeds <em>and</em> the token's
+        <code>phone_number</code> matches an existing account. Keep one manual escape hatch — an
+        admin-issued reset code, audit-logged — for the customer whose number has changed. That path
+        needs the caller to state their last order before you issue anything.
+      </p>
+
+      <h3>Review checklist for the local branch</h3>
+      <ul class="checklist">
+        <li>Server calls <code>verifyIdToken</code>; no client-supplied "verified" boolean is trusted anywhere.</li>
+        <li><code>decoded.phone_number</code> is compared against the canonical submitted phone, not just presence-checked.</li>
+        <li>Duplicate check runs <em>before</em> the SMS is sent.</li>
+        <li>Phone is normalized to <code>+91…</code> on every write path, including the admin seed.</li>
+        <li>Firebase client is signed out after verification, so no stray Firebase session lingers.</li>
+        <li>App Check on, region restricted to IN, daily SMS cap set, availability endpoint rate-limited.</li>
+        <li>Authorized domains in the Firebase console include the Netlify domain <em>and</em> <code>localhost</code>.</li>
+        <li>Service-account JSON is a server-only env var — never <code>NEXT_PUBLIC_</code>.</li>
+      </ul>
+
+      <h3>What gets deleted</h3>
+      <p>
+        <code>api/verify-email</code>, <code>api/verify-otp</code>, <code>api/resend-otp</code>,
+        <code>(auth)/verify-email</code>, <code>VerifyEmailForm</code>,
+        <code>sendVerificationEmail</code>, and <code>ALLOWED_EMAIL_DOMAINS</code>.
+        <code>Order.customerEmail</code> becomes nullable with <code>customerPhone</code> as the
+        contact of record; the invoice mail only goes out when an address exists, and
+        <code>OrderManager</code>'s search should cover phone and username.
+      </p>
+    </section>
+
+    <!-- ============ R6 ============ -->
+    <section id="alerts">
+      <div class="sec-head">
+        <p class="eyebrow">R6 · Notifications</p>
+        <h2>Alerts for the shop, tracking for the customer, moments for both</h2>
+      </div>
+
+      <p>
+        Three audiences, two channels, and you already own most of the plumbing: a role-gated
+        WebSocket server for the admin, and a Firebase project plus <code>next-pwa</code> for
+        customers.
+      </p>
+
+      <h3>Admin — a new order lands</h3>
+      <p>
+        <code>src/server/websocket.ts</code> is already an admin-only WSS with a JWT-checked upgrade
+        and a <code>POST /broadcast</code> hook. Fire it from the <strong>Razorpay webhook</strong>,
+        not from <code>checkout/verify</code> — the webhook is the path that still arrives when the
+        customer closes the tab mid-payment.
+      </p>
+      <ul>
+        <li><strong>Authenticate <code>/broadcast</code> first</strong> (finding 1). Loopback-only binding, or a shared secret header. It currently accepts anything.</li>
+        <li>Reconnect with exponential backoff, and on reconnect <strong>refetch orders since the last seen id</strong>. A socket alone silently drops everything that happened while the laptop was asleep — the refetch is what makes it reliable.</li>
+        <li>Badge count plus a short sound, and a toast that deep-links to the order. One sound per order, never per message.</li>
+        <li>Second use for the same channel: the <strong>05:00 "today is still undeclared"</strong> nudge, and the short-fall notice when an allocation comes up short.</li>
+        <li>The access token still travels in the <code>?token=</code> query string, which proxies log. The new <code>exp</code> limits the damage; moving it to a <code>Sec-WebSocket-Protocol</code> header would close it.</li>
+      </ul>
+
+      <h3>Customer — order tracking</h3>
+      <p>
+        Use <strong>FCM web push</strong> — the same Firebase project you added for OTP, so no new
+        vendor and no new billing relationship.
+      </p>
+      <ul>
+        <li><code>public/firebase-messaging-sw.js</code> alongside the existing <code>next-pwa</code> service worker; VAPID key in env; <code>getToken()</code> only after an explicit in-app opt-in, never on first page load.</li>
+        <li><code>PushDevice { userId, token, platform, createdAt, lastSeenAt }</code>. Prune on <code>messaging/registration-token-not-registered</code> — dead tokens accumulate fast.</li>
+        <li>Fire on <code>ORDER_STATUS</code> transitions: Confirmed → Out for delivery → Delivered, plus payment failure and <strong>short-fall</strong>. Idempotent on <code>(orderId, status)</code> so a webhook retry doesn't double-notify.</li>
+        <li>Deep-link into the order, not the home page.</li>
+        <li><strong>iOS caveat:</strong> web push only works once the PWA is installed to the home screen (iOS 16.4+). Worth a one-line "Add to Home Screen" nudge rather than a silent failure.</li>
+      </ul>
+
+      <h3>Moment marketing — the declaration <em>is</em> the moment</h3>
+      <p>
+        This falls out of R1 for free. When the morning sheet saves and a product goes from nothing
+        to declared kilos, that is a real event with a real deadline — exactly the thing worth a
+        push, and the reason it won't read as spam.
+      </p>
+
+      <div class="card">
+        <p style="font-weight:600;margin-bottom:2px;">வஞ்சிரம் just landed — 12 kg</p>
+        <p style="color:var(--muted);font-size:13px;">₹1,200/kg · order before 7:30 PM for delivery today</p>
+      </div>
+
+      <ul>
+        <li><strong>Opt-in by intent.</strong> A <em>Notify me when this lands</em> button on any product that hasn't been declared today, plus per-category subscriptions. <code>CatchAlert { userId, productId?, category? }</code>. High intent, genuinely useful, and it doubles as demand data for tomorrow's <code>planned</code> figures.</li>
+        <li><strong>Second moment worth having:</strong> a reorder nudge when something a customer bought before lands again, drawn from <code>OrderItem</code> history.</li>
+        <li><strong>Guardrails matter more than the feature.</strong> One marketing push per user per day, quiet hours 21:00–06:00 IST, and marketing consent stored <em>separately</em> from transactional — muting offers must never mute "your order is out for delivery" or a short-fall notice.</li>
+        <li><strong>Queue it, don't send inline.</strong> The sheet save must stay fast. Write <code>NotificationJob</code> rows in the same transaction as the declaration, and drain them from a scheduled function. Retries and a send log come free.</li>
+      </ul>
+
+      <div class="callout">
+        <p>
+          The cutoff turns every catch alert into a genuine deadline — <em>"order before 7:30
+          PM"</em> is true, not a growth tactic. That is the difference between a notification people
+          keep on and one they turn off in week two.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 07 ============ -->
+    <section id="slots">
+      <div class="sec-head">
+        <p class="eyebrow">07 · Explainer</p>
+        <h2>Delivery slots, and whether you need them yet</h2>
+      </div>
+
+      <p>
+        You asked what this means. A <strong>delivery slot</strong> is a named time window a customer
+        picks at checkout — say 07:00–10:00 or 17:00–20:00 — with a limit on how many orders each
+        window can hold. Two separate ideas live inside it: <em>telling the customer when</em>, and
+        <em>capping how many</em>.
+      </p>
+
+      <h3>Why it comes up here</h3>
+      <p>
+        Right now <code>fulfilDay</code> answers <em>which catch</em>, not <em>when it arrives</em>.
+        "Delivered tomorrow morning" is a promise with no time attached. That's tolerable at low
+        volume and stops being tolerable for three reasons:
+      </p>
+      <ul>
+        <li><strong>Fresh fish needs someone home.</strong> It can't sit at a gate for four hours in Tamil Nadu heat. A window is the difference between a delivery and a wasted trip.</li>
+        <li><strong>A 19:30 cutoff already implies more than one run.</strong> An order at 08:00 and an order at 19:00 cannot be on the same trip. You are effectively running a morning round and an evening round today — slots just make that visible instead of implicit.</li>
+        <li><strong>Capacity is a real limit.</strong> One rider on one round can carry maybe 25 orders. Without a cap, the 40th order of the morning gets accepted and then disappoints — the same failure as overselling stock, in a different dimension.</li>
+      </ul>
+
+      <h3>What I'd do</h3>
+      <div class="rules">
+        <div class="rule">
+          <div class="rule-n">Now</div>
+          <div class="rule-b">
+            <p><b>Two fixed runs, assigned automatically. No customer choice, no cap.</b></p>
+            <p>
+              Add <code>Order.slot</code> as <code>'MORNING' | 'EVENING'</code>, derived from the
+              same elapsed-minutes function that picks <code>fulfilDay</code>: ordered before
+              ~11:00 → that day's evening run; after → next morning. One column, no new UI, and the
+              customer finally sees <em>"Arriving tomorrow, 7–10 AM"</em> instead of a vague
+              "tomorrow". This is worth doing in Phase 1 because it costs almost nothing and it
+              makes every notification and invoice more concrete.
+            </p>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="rule-n">Later</div>
+          <div class="rule-b">
+            <p><b>Customer-chosen windows with a capacity guard.</b></p>
+            <p>
+              A <code>DeliverySlot { day, slot, capacity, booked }</code> row, reserved at checkout
+              with exactly the same conditional update that guards stock:
+              <code>WHERE booked &lt; capacity</code>. If it can't be reserved, the slot greys out in
+              the picker. Build this when you start turning orders away or when two runs stop being
+              enough — not before. It is the same pattern you'll already have written for
+              <code>DayStock</code>, so it's a small addition when the day comes.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <p>
+        The thing to avoid is offering a choice of windows without a capacity cap. That reads as a
+        promise and behaves as a guess, which is worse than not asking.
+      </p>
+    </section>
+
+    <!-- ============ 08 ============ -->
+    <section id="order">
+      <div class="sec-head">
+        <p class="eyebrow">08 · Sequencing</p>
+        <h2>Build order</h2>
+      </div>
+      <p>
+        Ordered by what unblocks what. Phases 1 and 2 both reshape tables, and the database is
+        greenfield, so they belong together before any UI lands on top of them.
+      </p>
+
+      <div class="phases">
+        <div class="phase">
+          <div class="phase-n">Phase<b>01</b>Foundations</div>
+          <div class="phase-body">
+            <p>No visible change. The correctness pass everything else stands on.</p>
+            <ul>
+              <li>Everything to kilos: one pool, <code>pricePerKg</code> on the day row, <code>minOrderKg</code>; drop <code>CartItem.unit</code>.</li>
+              <li><code>DayStock</code> + <code>StockLog</code>; <code>Order.fulfilDay</code> and <code>Order.slot</code>.</li>
+              <li><code>business-day.ts</code> on elapsed minutes, with tests pinned to the midnight–04:00 window that the wall-clock version got wrong.</li>
+              <li>Real <code>$transaction</code> in checkout; conditional-update reservation against the right column.</li>
+              <li>Authenticate <code>/broadcast</code> — two lines, currently open.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-n">Phase<b>02</b>Identity</div>
+          <div class="phase-body">
+            <p>Merge the local OTP branch against the R5 contract. Destructive, cheap, best done while nothing is live.</p>
+            <ul>
+              <li>Schema: <code>username</code>, unique <code>phone</code>, optional <code>email</code>, <code>phoneVerifiedAt</code>; drop the email-verification columns.</li>
+              <li><code>classify()</code> + credentials provider + one-field login form.</li>
+              <li>Availability check before OTP; P2002 message map; Firebase-verified password reset.</li>
+              <li>Work the R5 checklist, especially App Check and the IN region lock.</li>
+              <li>Reseed; recreate the single admin account.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-n">Phase<b>03</b>Sheet &amp; short-fall</div>
+          <div class="phase-body">
+            <p>These ship together — a declaration screen without short-fall handling can take money it can't honour.</p>
+            <ul>
+              <li><code>/admin/stock</code> with <code>StockRow</code>, today + tomorrow columns, median pre-fill, dirty batching, undo, offline draft.</li>
+              <li><code>POST /api/admin/stock-day</code>, transactional and declarative, returning the allocation result.</li>
+              <li>Allocation function + the 08:00 auto-refund job + substitute offers, all idempotent.</li>
+              <li>"No catch today" button. Storefront states: landed / landing now / pre-order / gone.</li>
+              <li>AI agent rewired to return a draft; old form moved to <code>/admin/products/[id]</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-n">Phase<b>04</b>Alerts</div>
+          <div class="phase-body">
+            <p>Needs Phase 3's declaration event before moment marketing means anything.</p>
+            <ul>
+              <li>Admin order alerts off the Razorpay webhook, with reconnect-and-refetch; 05:00 undeclared nudge.</li>
+              <li>FCM setup, <code>PushDevice</code>, order-status and short-fall notifications.</li>
+              <li><code>CatchAlert</code> subscriptions, <code>NotificationJob</code> queue, caps and quiet hours.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-n">Phase<b>05</b>Nutrition</div>
+          <div class="phase-body">
+            <p>Independent of everything above — it can slip without blocking anything.</p>
+            <ul>
+              <li><code>nutrition Json?</code>, Zod schema, defaults table, importer fill.</li>
+              <li>Nutrition tab in Edit details, with copy-from-fish.</li>
+              <li>Product-page panel; catalog median for the omega-3 comparison.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 09 ============ -->
+    <section id="open">
+      <div class="sec-head">
+        <p class="eyebrow">09 · Decisions</p>
+        <h2>Still open</h2>
+      </div>
+      <p>
+        Everything structural is now decided. What's left are numbers you can change in one line, and
+        one question I'd want answered before Phase 3.
+      </p>
+      <ol class="plain">
+        <li>
+          <strong>The 08:00 refund deadline.</strong> Long enough that a customer waking up can
+          choose, short enough that money doesn't sit. If your morning round leaves earlier, this
+          should move earlier with it.
+        </li>
+        <li>
+          <strong>The half-order part-fill threshold.</strong> I picked 50% because it's the point
+          where a partial delivery stops being useful. If your customers mostly order 1&nbsp;kg,
+          this rarely fires; if they order for functions, it will fire often and is worth tuning.
+        </li>
+        <li>
+          <strong>Does the physical shop share this stock?</strong> If walk-in customers buy from the
+          same ice, the app's <code>declared</code> is not the truth for long, and the admin needs a
+          quick "sold 3 kg at the counter" adjustment — otherwise online customers get promised fish
+          that already walked out the door. This is the one thing that could still surprise you.
+        </li>
+        <li>
+          <strong>Delivery radius and charge</strong> — not modelled anywhere yet, and it interacts
+          with slots when you get there.
+        </li>
+      </ol>
+    </section>
+
+  </main>
+
+  <footer>
+    Design brief for ASCrafts/aquacart · rev 3, September 2026 · written against
+    <code>9812bcf</code> · Next 16 · Prisma 6 · MySQL · Firebase
+  </footer>
+
+</div>
+
+</body>

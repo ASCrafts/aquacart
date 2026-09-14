@@ -1,215 +1,192 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import ProductModel from '@/models/Product';
-function isValidId(id: string) {
-  return typeof id === 'string' && id.length >= 8;
-}
-import { auth } from '@/lib/auth';
-
-// Define the type for the route params
-type Props = {
-  params: Promise<{ id: string }>;
-};
-
-// GET: Fetch a single product
-export async function GET(request: Request, { params }: Props) {
-  try {
-    await dbConnect();
-    // FIX: Await the params object before accessing id
-    const { id } = await params;
-
-    if (!isValidId(id)) {
-      return NextResponse.json(
-        { message: 'Invalid product ID' },
-        { status: 400 }
-      );
-    }
-
-    const product = await ProductModel.findById(id);
-
-    if (!product) {
-      return NextResponse.json(
-        { message: 'Product not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(product, { status: 200 });
-  } catch (error) {
-    console.error('Failed to fetch product:', error);
-    return NextResponse.json(
-      { message: 'Internal Server Error' },
-      { status: 500 }
-    );
-  }
-}
-
 import { writeFile } from 'fs/promises';
 import path from 'path';
+import { Prisma } from '@prisma/client';
+import { auth } from '@/lib/auth';
+import prisma from '@/lib/prisma';
+import { ROLES } from '@/lib/constants';
+import { invalidateProducts, stockForProduct } from '@/lib/products';
 
-// PUT: Update an existing product
-export async function PUT(request: Request, { params }: Props) {
-  try {
-    // 1. Check Authentication
-    const session = await auth();
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+/**
+ * One product, by id.
+ *
+ * GET is the public read — the day's price and kilos, via `stockForProduct()`
+ * (src/lib/stock.ts), never re-derived here.
+ *
+ * PUT/DELETE/PATCH are the admin "Edit details" surface from R3: everything
+ * about a fish that is NOT today's kilos (name, slug, description, the
+ * order-size grid, the base price). Nothing here touches `DayStock` — that is
+ * `/api/admin/stock-day`'s job, and this route must never grow a kilo field.
+ */
 
-    await dbConnect();
-    // FIX: Await the params object
-    const { id } = await params;
+type Props = { params: Promise<{ id: string }> };
 
-    if (!isValidId(id)) {
-      return NextResponse.json(
-        { message: 'Invalid product ID' },
-        { status: 400 }
-      );
-    }
-
-    // 2. Parse FormData
-    const formData = await request.formData();
-    const name = formData.get('name') as string;
-    const nameTamil = (formData.get('nameTamil') as string) || null;
-    const aliases = (formData.get('aliases') as string) || null;
-    const slug = (formData.get('slug') as string)?.toLowerCase().trim();
-    const description = formData.get('description') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const category = formData.get('category') as string;
-    const quantity = parseInt(formData.get('quantity') as string, 10);
-    const stockKg = parseFloat(formData.get('stockKg') as string);
-    const pricePerKg = parseFloat(formData.get('pricePerKg') as string) || 0;
-    const maxQuantity = parseInt(formData.get('maxQuantity') as string, 10) || 99;
-    
-    // Construct the payload dynamically
-    const updatePayload: any = {
-      name, nameTamil, aliases, description, price, pricePerKg, category, quantity, stockKg, maxQuantity
-    };
-
-    // Mark a genuine restock. Only an *increase* counts — editing a typo or
-    // correcting a price must not make an item look like today's fresh catch,
-    // and neither must a sale reducing the count.
-    const current = await ProductModel.findById(id);
-    if (
-      current &&
-      ((!isNaN(quantity) && quantity > current.quantity) ||
-        (!isNaN(stockKg) && stockKg > current.stockKg))
-    ) {
-      updatePayload.restockedAt = new Date();
-    }
-
-    // Handle slug update with uniqueness check
-    if (slug) {
-      const existingProduct = await ProductModel.findOne({ slug, _id: { $ne: id } });
-      if (existingProduct) {
-        return NextResponse.json({ message: `A product with the slug "${slug}" already exists.` }, { status: 409 });
-      }
-      updatePayload.slug = slug;
-    }
-
-    const file = formData.get('image') as File | null;
-    
-    // Only upload a new file and overwrite imageUrl if a new File was provided
-    if (file && file.size > 0 && file.name) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const filepath = path.join(process.cwd(), 'public', 'uploads', filename);
-      await writeFile(filepath, buffer);
-      updatePayload.imageUrl = `/uploads/${filename}`;
-    }
-
-    const updatedProduct = await ProductModel.findByIdAndUpdate(id, updatePayload, {
-      new: true, // Return the updated document
-      runValidators: true, // Ensure updates follow the schema
-    });
-
-    if (!updatedProduct) {
-      return NextResponse.json(
-        { message: 'Product not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(updatedProduct, { status: 200 });
-  } catch (error) {
-    console.error('Failed to update product:', error);
-    return NextResponse.json(
-      { message: 'Internal Server Error' },
-      { status: 500 }
-    );
-  }
+function forbidden() {
+  return NextResponse.json({ message: 'Forbidden: admin access required' }, { status: 403 });
 }
 
-// DELETE: Remove a product
-export async function DELETE(request: Request, { params }: Props) {
-  try {
-    // 1. Check Authentication
-    const session = await auth();
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    await dbConnect();
-    // FIX: Await the params object
-    const { id } = await params;
-
-    if (!isValidId(id)) {
-      return NextResponse.json(
-        { message: 'Invalid product ID' },
-        { status: 400 }
-      );
-    }
-
-    const deletedProduct = await ProductModel.findByIdAndDelete(id);
-
-    if (!deletedProduct) {
-      return NextResponse.json(
-        { message: 'Product not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { message: 'Product deleted successfully' },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Failed to delete product:', error);
-    return NextResponse.json(
-      { message: 'Internal Server Error' },
-      { status: 500 }
-    );
-  }
+async function requireAdmin() {
+  const session = await auth();
+  return session?.user?.role === ROLES.ADMIN ? session : null;
 }
 
-// PATCH: Toggle product availability (stock toggle)
-export async function PATCH(request: Request, { params }: Props) {
+function isRecordNotFound(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
+}
+
+export async function GET(_request: Request, { params }: Props) {
   try {
-    const session = await auth();
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    await dbConnect();
     const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
 
-    if (!isValidId(id)) {
-      return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
-    }
-
-    const body = await request.json();
-    const updatedProduct = await ProductModel.findByIdAndUpdate(
-      id,
-      { availability: body.availability },
-      { new: true }
-    );
-
-    if (!updatedProduct) {
+    const entry = await stockForProduct(id);
+    if (!entry) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updatedProduct, { status: 200 });
+    return NextResponse.json(entry, { status: 200 });
   } catch (error) {
+    console.error('Failed to fetch product:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+/** A number from a form field, or undefined when blank/absent/junk — never NaN. */
+function num(formData: FormData, key: string): number | undefined {
+  const raw = formData.get(key);
+  if (raw === null || raw === '') return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function str(formData: FormData, key: string): string | undefined {
+  const raw = formData.get(key);
+  return typeof raw === 'string' ? raw : undefined;
+}
+
+async function saveImage(file: File): Promise<string> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+  const filepath = path.join(process.cwd(), 'public', 'uploads', filename);
+  await writeFile(filepath, buffer);
+  return `/uploads/${filename}`;
+}
+
+// PUT: update a product's catalog fields. Partial — an omitted field is left
+// alone, not cleared, so the admin form can post just what changed.
+export async function PUT(request: Request, { params }: Props) {
+  const session = await requireAdmin();
+  if (!session) return forbidden();
+
+  try {
+    const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
+
+    const formData = await request.formData();
+    const slug = str(formData, 'slug')?.toLowerCase().trim();
+
+    if (slug) {
+      const clash = await prisma.product.findFirst({
+        where: { slug, id: { not: id } },
+        select: { id: true },
+      });
+      if (clash) {
+        return NextResponse.json(
+          { message: `A product with the slug "${slug}" already exists.` },
+          { status: 409 }
+        );
+      }
+    }
+
+    const file = formData.get('image');
+    const imageUrl = file instanceof File && file.size > 0 ? await saveImage(file) : undefined;
+
+    const fields: Record<string, string | number | null | undefined> = {
+      name: str(formData, 'name'),
+      nameTamil: str(formData, 'nameTamil') || null,
+      aliases: str(formData, 'aliases') || null,
+      slug,
+      description: str(formData, 'description'),
+      category: str(formData, 'category'),
+      imageHint: str(formData, 'imageHint') || null,
+      imageUrl,
+      minOrderKg: num(formData, 'minOrderKg'),
+      maxOrderKg: num(formData, 'maxOrderKg'),
+      stepKg: num(formData, 'stepKg'),
+      avgPieceWeight: num(formData, 'avgPieceWeight'),
+      basePricePerKg: num(formData, 'basePricePerKg'),
+    };
+    // Undefined means "field not sent" (leave alone); `null` means "clear it"
+    // for the nullable text columns. Prisma's update() takes the same rule, so
+    // dropping the undefined keys is the whole job. The double cast is needed
+    // because this object is assembled dynamically from a form — there is no
+    // way to prove to the compiler it matches Prisma's generated input type,
+    // only to construct it so that it does.
+    const update = Object.fromEntries(
+      Object.entries(fields).filter(([, v]) => v !== undefined)
+    ) as unknown as Prisma.ProductUpdateInput;
+
+    const updated = await prisma.product.update({ where: { id }, data: update });
+    invalidateProducts();
+
+    return NextResponse.json(updated, { status: 200 });
+  } catch (error) {
+    if (isRecordNotFound(error)) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+    }
+    console.error('Failed to update product:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// DELETE: remove a product entirely.
+export async function DELETE(_request: Request, { params }: Props) {
+  const session = await requireAdmin();
+  if (!session) return forbidden();
+
+  try {
+    const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
+
+    await prisma.product.delete({ where: { id } });
+    invalidateProducts();
+
+    return NextResponse.json({ message: 'Product deleted successfully' }, { status: 200 });
+  } catch (error) {
+    if (isRecordNotFound(error)) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+    }
+    console.error('Failed to delete product:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// PATCH: the admin kill switch — delist/relist a fish. Day-to-day
+// availability is decided by DayStock, not by this flag (see schema comment).
+export async function PATCH(request: Request, { params }: Props) {
+  const session = await requireAdmin();
+  if (!session) return forbidden();
+
+  try {
+    const { id } = await params;
+    if (!id) return NextResponse.json({ message: 'Invalid product ID' }, { status: 400 });
+
+    const body = (await request.json().catch(() => null)) as { availability?: unknown } | null;
+    if (typeof body?.availability !== 'boolean') {
+      return NextResponse.json({ message: 'Send { availability: boolean }.' }, { status: 400 });
+    }
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { availability: body.availability },
+    });
+    invalidateProducts();
+
+    return NextResponse.json(updated, { status: 200 });
+  } catch (error) {
+    if (isRecordNotFound(error)) {
+      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+    }
     console.error('Failed to toggle availability:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }

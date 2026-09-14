@@ -6,7 +6,7 @@ import { Crown, LayoutGrid, LogIn, LogOut, Search, ShoppingCart, User, Waves, X 
 import { Button } from '@/components/ui/button';
 import { ROLES } from '@/lib/constants';
 import { usePathname, useRouter } from 'next/navigation';
-import { cn, formatPrice } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useEffect } from 'react';
 import { searchProducts } from '@/lib/search';
 import { useCartCount } from '@/hooks/useCartCount';
+// Type-only: erased at compile time, so this does not pull `src/lib/products.ts`
+// (which imports Prisma) into the client bundle. See src/types/Product.ts for
+// the same reasoning applied to STOCK_STATE.
+import type { CatalogProduct } from '@/lib/products';
 
 const desktopNavLinks = [
   { href: '/', label: 'Home' },
@@ -34,8 +38,8 @@ export default function Header() {
   const cartCount = useCartCount();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [allProducts, setAllProducts] = useState<any[]>([]);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<CatalogProduct[]>([]);
+  const [suggestions, setSuggestions] = useState<CatalogProduct[]>([]);
 
   useEffect(() => {
     const fetchAllProducts = async () => {
@@ -167,7 +171,7 @@ export default function Header() {
                     </div>
                     {suggestions.map((product) => (
                       <Link
-                        key={product._id}
+                        key={product.id}
                         href={`/shop/${product.slug}`}
                         onClick={() => {
                           setIsSearchOpen(false);
@@ -192,8 +196,11 @@ export default function Header() {
                             {product.category}
                           </p>
                         </div>
+                        {/* basePricePerKg is the "from ₹X/kg" teaser — what a
+                            customer is actually charged always comes from
+                            that day's DayStock row, shown on the shop/cart. */}
                         <span className="text-xs font-extrabold text-aq-primary">
-                          {formatPrice(product)}
+                          ₹{product.basePricePerKg.toFixed(2)}/kg
                         </span>
                       </Link>
                     ))}

@@ -2,16 +2,27 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { Loader2, ShoppingCart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Minus, Plus, ShoppingCart, AlertCircle, ArrowLeft, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import Link from 'next/link';
-import { Review, ReviewApiResponse } from '@/types/Review';
-import { formatPrice } from '@/lib/utils';
+import { refreshCartCount } from '@/hooks/useCartCount';
+import { KgStepper, defaultKg, formatRupees } from '@/components/products/KgStepper';
+import { StockBadge, CutoffCountdown, PreorderLine } from '@/components/products/StockBadge';
+import CatchAlertButton from '@/components/products/CatchAlertButton';
+// R4: the customer nutrition panel, between description and reviews. Owned by
+// another group. Its contract: `nutrition` is the raw, unvalidated
+// `Product.nutrition` blob (it safeParses via readNutrition/NutritionSchema
+// itself and renders nothing on a bad or empty blob), `productName` is used in
+// its own heading copy, and `medians` (catalog-wide, from `catalogMedians()`)
+// drives the "2× the catalog median" lines.
+import NutritionPanel from '@/components/products/NutritionPanel';
+import type { NutritionMedians } from '@/lib/nutrition';
+import { STOCK_STATE, type StorefrontProduct } from '@/types/Product';
+import type { Review, ReviewApiResponse } from '@/types/Review';
 
 const StarRating = ({ rating, size = 18 }: { rating: number; size?: number }) => {
   return (
@@ -31,8 +42,34 @@ const StarRating = ({ rating, size = 18 }: { rating: number; size?: number }) =>
   );
 };
 
-export default function ProductDetailClient({ product }: { product: any }) {
-  const [quantity, setQuantity] = useState(1);
+interface ProductDetailClientProps {
+  /** The catalog row plus the day's stock view — see src/lib/products.ts. */
+  entry: StorefrontProduct;
+  /**
+   * "Arriving tomorrow, 7–10 AM" — computed server-side (src/lib/business-day.ts)
+   * from the same elapsed-minutes clock that picks `fulfilDay`, so this line
+   * can never disagree with what checkout actually books.
+   */
+  deliveryNote: string;
+  /** Catalog-wide nutrient medians, from `catalogMedians()`. Optional. */
+  medians?: NutritionMedians;
+}
+
+/**
+ * The product page.
+ *
+ * Everything about WHAT can be bought right now — price, kilos left, whether
+ * a purchase is even possible — comes from `entry.stock`, computed server-side
+ * by `viewFor()` (src/lib/stock.ts). This component never re-derives
+ * availability; it only decides how each of the four states (plus
+ * UNAVAILABLE) should look.
+ */
+export default function ProductDetailClient({ entry, deliveryNote, medians }: ProductDetailClientProps) {
+  const { product, stock } = entry;
+  const grid = { minOrderKg: product.minOrderKg, maxOrderKg: product.maxOrderKg, stepKg: product.stepKg };
+  const purchasable = stock.state === STOCK_STATE.AVAILABLE || stock.state === STOCK_STATE.PREORDER;
+
+  const [kg, setKg] = useState<number>(() => defaultKg(grid, stock.sellableKg));
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const [reviewsData, setReviewsData] = useState<ReviewApiResponse | null>(null);
@@ -51,7 +88,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
     try {
       const res = await fetch(`/api/products/${productId}/reviews`);
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as ReviewApiResponse;
         setReviewsData(data);
         if (data.userReview) {
           setReviewRating(data.userReview.rating);
@@ -66,10 +103,9 @@ export default function ProductDetailClient({ product }: { product: any }) {
   };
 
   useEffect(() => {
-    if (product?._id) {
-      fetchReviews(product._id);
-    }
-  }, [product?._id]);
+    fetchReviews(product.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +125,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
 
     setIsSubmittingReview(true);
     try {
-      const res = await fetch(`/api/products/${product?._id}/reviews`, {
+      const res = await fetch(`/api/products/${product.id}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating: reviewRating, comment: reviewComment }),
@@ -102,10 +138,8 @@ export default function ProductDetailClient({ product }: { product: any }) {
         description: 'Thank you for your feedback!',
       });
 
-      if (product?._id) {
-        await fetchReviews(product._id);
-      }
-    } catch (err) {
+      await fetchReviews(product.id);
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -116,31 +150,40 @@ export default function ProductDetailClient({ product }: { product: any }) {
     }
   };
 
+  // Sets the cart line to exactly the kilos dialled in on the stepper, rather
+  // than adding to whatever is already there — the stepper represents "how
+  // much I want in my cart", not "how much more". Quick-add buttons elsewhere
+  // (ProductCard) are additive on purpose; this control is not one of those.
   const handleAddToCart = async () => {
     if (!session) {
       router.push('/login');
       return;
     }
+    if (kg <= 0) return;
 
     setIsAddingToCart(true);
     try {
       const res = await fetch('/api/cart', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product?._id, quantity }),
+        body: JSON.stringify({ productId: product.id, kg }),
       });
 
-      if (!res.ok) throw new Error('Failed to add to cart');
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(data.message || 'Failed to add to cart');
+      }
 
+      refreshCartCount();
       toast({
-        title: 'Added to Cart!',
-        description: `${quantity}x ${product?.name} added to your cart.`,
+        title: 'Added to Cart',
+        description: `${kg} kg of ${product.name} added to your cart.`,
       });
-    } catch {
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not add item to your cart.',
+        description: error instanceof Error ? error.message : 'Could not add item to your cart.',
       });
     } finally {
       setIsAddingToCart(false);
@@ -160,7 +203,11 @@ export default function ProductDetailClient({ product }: { product: any }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Image */}
           <div className="aq-card-static overflow-hidden animate-fade-in-left motion-reduce:animate-none">
-            <div className="relative aspect-square bg-aq-surface-container">
+            <div
+              className={`relative aspect-square bg-aq-surface-container ${
+                stock.state === STOCK_STATE.UNAVAILABLE ? 'opacity-60' : ''
+              }`}
+            >
               <Image
                 src={product.imageUrl}
                 alt={product.name}
@@ -187,10 +234,8 @@ export default function ProductDetailClient({ product }: { product: any }) {
               <p className="text-base text-aq-on-surface-variant mt-1">{product.nameTamil}</p>
             )}
 
-            <div className="flex items-center gap-3 mt-3">
-              <span className={`aq-badge text-xs ${product.availability ? 'aq-badge-success' : 'aq-badge-danger'}`}>
-                {product.availability ? 'In Stock' : 'Out of Stock'}
-              </span>
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
+              <StockBadge state={stock.state} />
               {reviewsData && reviewsData.totalCount > 0 && (
                 <div className="flex items-center gap-1.5 text-sm">
                   <StarRating rating={reviewsData.averageRating} size={15} />
@@ -199,59 +244,127 @@ export default function ProductDetailClient({ product }: { product: any }) {
                 </div>
               )}
             </div>
-            <p className="text-3xl font-extrabold text-aq-primary mt-5 tracking-tight">
-              {formatPrice(product)}
-              <span className="text-sm font-medium text-aq-on-surface-variant ml-1">/ piece</span>
-            </p>
+
+            {stock.state === STOCK_STATE.UNAVAILABLE ? (
+              <p className="text-base text-aq-on-surface-variant mt-5">
+                This fish is not part of the current delivery.
+              </p>
+            ) : (
+              <p className="text-3xl font-extrabold text-aq-primary mt-5 tracking-tight">
+                {formatRupees(stock.pricePerKg)}
+                <span className="text-sm font-medium text-aq-on-surface-variant ml-1">/ kg</span>
+              </p>
+            )}
 
             <p className="text-base text-aq-on-surface-variant mt-5 leading-relaxed">
               {product.description}
             </p>
 
-            {/* Quantity Selector & Add to Cart */}
+            {/* The four states, each with its own real treatment. */}
             <div className="mt-8 pt-6 border-t border-aq-outline-variant/15">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center bg-aq-surface-container rounded-full h-12 px-1">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-aq-surface-container-high transition-colors"
-                    aria-label="Decrease quantity"
+              {stock.state === STOCK_STATE.AVAILABLE && (
+                <>
+                  <KgStepper
+                    id="pdp-kg"
+                    label={`Quantity of ${product.name} in kilograms`}
+                    kg={kg}
+                    onChange={setKg}
+                    grid={grid}
+                    sellableKg={stock.sellableKg}
+                    pricePerKg={stock.pricePerKg}
+                    avgPieceWeight={product.avgPieceWeight}
+                  />
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={!purchasable || isAddingToCart || kg <= 0}
+                    className="aq-btn-primary h-12 px-8 text-sm w-full mt-4"
                   >
-                    <Minus className="w-4 h-4 text-aq-on-surface-variant" />
-                  </button>
-                  <span className="text-base font-bold text-aq-on-surface w-10 text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(Math.min(quantity + 1, product.maxQuantity ?? 99))}
-                    disabled={quantity >= (product.maxQuantity ?? 99)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-aq-surface-container-high transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    aria-label="Increase quantity"
-                  >
-                    <Plus className="w-4 h-4 text-aq-on-surface-variant" />
-                  </button>
-                </div>
+                    {isAddingToCart ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                    )}
+                    {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+                  </Button>
+                  {/* The 19:30 cutoff is a true deadline — stated plainly. */}
+                  <CutoffCountdown className="mt-3" />
+                </>
+              )}
 
-                <Button
-                  onClick={handleAddToCart}
-                  disabled={!product.availability || isAddingToCart}
-                  className="aq-btn-primary h-12 px-8 text-sm flex-1 md:flex-none"
-                >
-                  {isAddingToCart ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="mr-2 h-4 w-4" />
+              {stock.state === STOCK_STATE.PREORDER && (
+                <>
+                  <p className="mb-2 text-sm font-bold text-aq-on-surface">
+                    Pre-order · delivered tomorrow
+                  </p>
+                  <KgStepper
+                    id="pdp-kg"
+                    label={`Quantity of ${product.name} in kilograms`}
+                    kg={kg}
+                    onChange={setKg}
+                    grid={grid}
+                    sellableKg={stock.sellableKg}
+                    pricePerKg={stock.pricePerKg}
+                    avgPieceWeight={product.avgPieceWeight}
+                  />
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={!purchasable || isAddingToCart || kg <= 0}
+                    className="aq-btn-primary h-12 px-8 text-sm w-full mt-4"
+                  >
+                    {isAddingToCart ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                    )}
+                    {isAddingToCart ? 'Adding...' : 'Pre-order'}
+                  </Button>
+                  <PreorderLine className="mt-3" />
+                  {deliveryNote && (
+                    <p className="mt-1 text-[11px] text-aq-on-surface-variant">{deliveryNote}</p>
                   )}
-                  {isAddingToCart ? 'Adding...' : 'Add to Cart'}
-                </Button>
-              </div>
-              {quantity >= (product.maxQuantity ?? 99) && (
-                <p className="text-xs text-amber-600 mt-2">
-                  Maximum order limit: {product.maxQuantity ?? 99} pieces
+                </>
+              )}
+
+              {stock.state === STOCK_STATE.LANDING && (
+                <div className="rounded-2xl bg-sky-50 p-4">
+                  <p className="text-sm font-bold text-sky-900">Landing now — back by 6 AM.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-sky-800/80">
+                    The boats are still out — this is not sold out and nothing has gone wrong.
+                    {product.name} goes on sale the moment today&rsquo;s catch is weighed in, and
+                    tomorrow&rsquo;s pre-orders are still open across the shop in the meantime.
+                  </p>
+                  <div className="mt-3">
+                    <CatchAlertButton productId={product.id} label={product.name} />
+                  </div>
+                </div>
+              )}
+
+              {stock.state === STOCK_STATE.SOLD_OUT && (
+                <div className="rounded-2xl bg-aq-surface-container p-4">
+                  <p className="text-sm font-bold text-aq-on-surface">
+                    Every kilo of today&rsquo;s catch is spoken for.
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-aq-on-surface-variant">
+                    Get told the moment the next lot lands.
+                  </p>
+                  <div className="mt-3">
+                    <CatchAlertButton productId={product.id} label={product.name} />
+                  </div>
+                </div>
+              )}
+
+              {stock.state === STOCK_STATE.UNAVAILABLE && (
+                <p className="text-sm text-aq-on-surface-variant">
+                  Not part of this delivery right now — check back another day.
                 </p>
               )}
             </div>
           </div>
+        </div>
+
+        {/* Nutrition — between description and reviews, per R4. */}
+        <div className="mt-12 pt-8 border-t border-aq-outline-variant/15">
+          <NutritionPanel nutrition={product.nutrition} productName={product.name} medians={medians} />
         </div>
 
         {/* Reviews Section */}
@@ -280,7 +393,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
               {reviewsData && reviewsData.totalCount > 0 && (
                 <div className="aq-card-static p-6 flex flex-col gap-3">
                   {[5, 4, 3, 2, 1].map((stars) => {
-                    const count = reviewsData.reviews.filter(r => r.rating === stars).length;
+                    const count = reviewsData.reviews.filter((r) => r.rating === stars).length;
                     const percentage = reviewsData.totalCount > 0 ? (count / reviewsData.totalCount) * 100 : 0;
                     return (
                       <div key={stars} className="flex items-center gap-3 text-sm">
@@ -307,7 +420,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
                 <h3 className="text-lg font-bold text-aq-on-surface mb-4">
                   {reviewsData?.userReview ? 'Edit Your Review' : 'Write a Review'}
                 </h3>
-                
+
                 {session ? (
                   <form onSubmit={handleSubmitReview} className="flex flex-col gap-4">
                     {/* Star selection */}
@@ -361,7 +474,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
                           Non-verified review
                         </span>
                       )}
-                      
+
                       <Button
                         type="submit"
                         disabled={isSubmittingReview}
@@ -412,7 +525,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
-                    {reviewsData.reviews.map((review) => {
+                    {reviewsData.reviews.map((review: Review) => {
                       const initials = review.userName
                         ? review.userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
                         : 'A';
@@ -421,7 +534,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
                         month: 'short',
                         day: 'numeric',
                       });
-                      
+
                       return (
                         <div key={review._id} className="aq-card-static p-5 flex gap-4">
                           {/* User Avatar Initials */}

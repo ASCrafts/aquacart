@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ROLES } from '@/lib/constants';
 import OrderManager from '@/components/admin/OrderManager';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 import { Package } from 'lucide-react';
 
 export default async function AdminOrdersPage() {
@@ -21,6 +22,17 @@ export default async function AdminOrdersPage() {
             <h1 className="text-2xl font-extrabold text-aq-on-surface tracking-tight">Order Management</h1>
             <p className="text-xs text-aq-on-surface-variant">Oversee all orders, refunds, and cancellations</p>
           </div>
+        </div>
+
+        {/*
+          The live feed and the table read the same order history two ways: the
+          feed is the doorbell (a new order, a short-fall, right now), the table
+          below is the ledger (everything, searchable). Stacking them here
+          rather than on /admin/stock keeps the WebSocket connection open only
+          on the screen an admin actually watches during the day.
+        */}
+        <div className="mb-8">
+          <AdminDashboard />
         </div>
 
         <OrderManager />

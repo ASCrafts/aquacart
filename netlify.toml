@@ -70,3 +70,45 @@
   for = "/api/products"
   [headers.values]
     Cache-Control = "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+
+# -----------------------------------------------------------------------------
+# Scheduled jobs (R2 short-fall flow + R6 admin nudge + notification drain).
+#
+# The three jobs live as ordinary Next.js App Router route handlers —
+# src/app/api/cron/{shortfall-refunds,undeclared-nudge,drain-notifications}/route.ts
+# — guarded by src/lib/cron-auth.ts, which fails closed if CRON_SECRET is
+# unset and requires `Authorization: Bearer <CRON_SECRET>` on every call.
+#
+# Netlify's "experimental-scheduled" route config (`export const config = {
+# type: 'experimental-scheduled', schedule }`) only wires up Pages Router API
+# routes (pages/api/*.ts default-export handlers); it does not attach to an
+# App Router route.ts exporting GET. A schedule can only be attached to a real
+# Netlify Function, so the entries below name three functions that are NOT
+# part of this task's file list and still need to be added, one per job, as
+# e.g. netlify/functions/shortfall-refunds.mts:
+#
+#   import type { Config } from '@netlify/functions';
+#   export default () =>
+#     fetch(`${process.env.URL}/api/cron/shortfall-refunds`, {
+#       headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+#     });
+#   export const config: Config = { schedule: '*/15 * * * *' };
+#
+# Cron fires in UTC, but every job measures IST via business-day.ts internally
+# (elapsed minutes, never the wall clock), so the frequency below is the only
+# thing that matters — not which UTC minute it lands on.
+[functions."shortfall-refunds"]
+  # shortfall-refunds tests the 08:00 IST DEADLINE on each run, not the
+  # current hour, so a missed invocation catches up silently on the next one
+  # instead of losing a morning's refunds. See that route's own doc comment.
+  schedule = "*/15 * * * *"
+
+[functions."undeclared-nudge"]
+  # Same reasoning: it no-ops before elapsed 05:00 IST and again once today's
+  # dedupeKey exists, so polling it every 15 minutes costs nothing extra.
+  schedule = "*/15 * * * *"
+
+[functions."drain-notifications"]
+  # The queue's own claim lease is 5 minutes (LEASE_MS in that route), so
+  # draining more often than that would only contend with itself.
+  schedule = "*/5 * * * *"

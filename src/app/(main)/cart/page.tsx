@@ -1,31 +1,47 @@
+import { ShoppingBag } from 'lucide-react';
 import CartView from '@/components/cart/CartView';
 import SuggestedFish from '@/components/cart/SuggestedFish';
 import { auth } from '@/lib/auth';
-import dbConnect from '@/lib/mongodb';
-import UserModel from '@/models/User';
-import { ShoppingBag } from 'lucide-react';
+import prisma from '@/lib/prisma';
+import { getFreshCatches } from '@/lib/products';
 
 /**
- * One query for the whole page.
+ * Server shell for the cart page.
  *
- * `UserModel.findById` already joins addresses, cart items and their products
- * (`select()` is a no-op in the Prisma shim), so the cart is right here — no
- * reason to make the browser round-trip to /api/cart for the same rows after
- * hydration. Each of those hops costs ~700ms against the remote database, and
- * they were serialised behind the render, which is what made the cart feel
- * like it hung for several seconds.
+ * Deliberately thin: CartView fetches its own priced lines from
+ * GET /api/cart on mount (see that route for the exact response contract —
+ * day, slot, deliveryNote, items with kg/pricePerKg/lineTotal/issue, subtotal,
+ * totalKg, blocked). Re-deriving stock or pricing here, server-side, would be
+ * a second opinion about sellable kilos — precisely how the old two-pool bug
+ * happened — so this page only fetches the things that are genuinely its own:
+ * the address list (for the "no default address" check) and today's
+ * fresh-catch suggestions for the strip beneath the cart.
  */
 async function getCartPageData() {
   const session = await auth();
-  if (!session?.user?.id) return { addresses: [], cart: null };
-  await dbConnect();
-  const user = await UserModel.findById(session.user.id);
-  if (!user) return { addresses: [], cart: null };
-  return { addresses: user.addresses ?? [], cart: user.cart ?? null };
+  if (!session?.user?.id) return { userId: null, addresses: [], suggestions: [] };
+
+  const [addresses, suggestions] = await Promise.all([
+    prisma.address.findMany({
+      where: { userId: session.user.id },
+      orderBy: [{ isDefault: 'desc' }, { id: 'asc' }],
+    }),
+    getFreshCatches(6),
+  ]);
+
+  return { userId: session.user.id, addresses, suggestions };
 }
 
 export default async function CartPage() {
-  const { addresses, cart } = await getCartPageData();
+  const { userId, addresses, suggestions } = await getCartPageData();
+
+  if (!userId) {
+    return (
+      <div className="container py-20 text-center">
+        <p className="text-aq-on-surface-variant">Please log in to view your cart.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-aq-surface min-h-screen">
@@ -39,11 +55,8 @@ export default async function CartPage() {
             <p className="text-xs text-aq-on-surface-variant">Review your items before checkout</p>
           </div>
         </div>
-        <CartView
-          userAddresses={JSON.parse(JSON.stringify(addresses))}
-          initialCart={JSON.parse(JSON.stringify(cart))}
-        />
-        <SuggestedFish />
+        <CartView userAddresses={addresses} />
+        <SuggestedFish products={suggestions} />
       </div>
     </div>
   );

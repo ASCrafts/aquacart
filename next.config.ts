@@ -57,6 +57,51 @@ const RAZORPAY_CONNECT = [
   'https://lumberjack-metrics.razorpay.com',
 ];
 
+// Firebase phone (SMS OTP) verification. reCAPTCHA is not optional here —
+// Firebase requires a RecaptchaVerifier before it will send an SMS — and it
+// pulls script, frame and image resources from Google origins. Omitting any of
+// these makes the OTP silently never arrive, because the CSP blocks the
+// challenge rather than the SMS.
+const FIREBASE_SCRIPT = [
+  'https://www.google.com',
+  'https://www.gstatic.com',
+  'https://apis.google.com',
+  // Firebase Analytics loads gtag.js from here.
+  'https://www.googletagmanager.com',
+];
+const FIREBASE_CONNECT = [
+  'https://identitytoolkit.googleapis.com',
+  'https://securetoken.googleapis.com',
+  'https://www.googleapis.com',
+  // Analytics beacons. The region1./*. hosts are used depending on where the
+  // measurement is routed, so the wildcards are load-bearing, not padding.
+  'https://www.google-analytics.com',
+  'https://*.google-analytics.com',
+  'https://*.analytics.google.com',
+  'https://www.googletagmanager.com',
+  // Analytics bootstraps through two further endpoints before it can send a
+  // single event, and neither is obvious from the SDK's public surface:
+  //   firebase.googleapis.com          -> fetches the app's dynamic webConfig
+  //   firebaseinstallations.googleapis.com -> registers a Firebase Installation
+  // Blocking either does not disable Analytics cleanly; it throws "Failed to
+  // fetch" from deep inside the SDK on every page load.
+  'https://firebase.googleapis.com',
+  'https://firebaseinstallations.googleapis.com',
+];
+// The reCAPTCHA challenge and Firebase's auth handler each render in an iframe.
+const FIREBASE_FRAME = [
+  'https://www.google.com',
+  'https://recaptcha.google.com',
+  `https://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'aqua-cart.firebaseapp.com'}`,
+];
+const FIREBASE_IMG = [
+  'https://www.gstatic.com',
+  'https://www.google.com',
+  // Analytics still falls back to a pixel in some paths.
+  'https://www.google-analytics.com',
+  'https://*.google-analytics.com',
+];
+
 // Mirrors `images.remotePatterns` below, plus the hosts hit by plain <img>
 // tags that never pass through next/image (the DiceBear avatar in the header,
 // Razorpay's own checkout assets).
@@ -70,6 +115,7 @@ const IMAGE_HOSTS = [
   'https://static.vecteezy.com',
   'https://api.dicebear.com',
   'https://*.razorpay.com',
+  ...FIREBASE_IMG,
 ];
 
 // The admin dashboard opens a WebSocket to this origin. Read at build time so
@@ -117,14 +163,14 @@ function contentSecurityPolicy(): string {
     // still sent below for browsers that predate frame-ancestors.
     'frame-ancestors': ["'none'"],
     'form-action': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'", ...RAZORPAY_SCRIPT],
+    'script-src': ["'self'", "'unsafe-inline'", ...RAZORPAY_SCRIPT, ...FIREBASE_SCRIPT],
     // Tailwind's runtime CSS vars and Radix's positioning both write inline
     // style attributes; there is no nonce path for those.
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', ...IMAGE_HOSTS],
     'font-src': ["'self'", 'data:'],
-    'connect-src': ["'self'", ...RAZORPAY_CONNECT, ...websocketOrigin()],
-    'frame-src': ["'self'", ...RAZORPAY_FRAME],
+    'connect-src': ["'self'", ...RAZORPAY_CONNECT, ...FIREBASE_CONNECT, ...websocketOrigin()],
+    'frame-src': ["'self'", ...RAZORPAY_FRAME, ...FIREBASE_FRAME],
     // next-pwa registers the Workbox service worker from a blob in some paths.
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],

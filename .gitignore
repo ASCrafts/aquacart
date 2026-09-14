@@ -51,3 +51,5 @@ firebase-debug.log
 firestore-debug.log
 /src/generated/prisma
 /blender_out
+/graphify-out
+/docs

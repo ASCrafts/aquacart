@@ -76,7 +76,13 @@ export const authConfig = {
         return Response.redirect(new URL('/shop', nextUrl));
       }
       
-      if (isLoggedIn && (nextUrl.pathname === '/login' || nextUrl.pathname === '/register')) {
+      // Somebody already signed in has no business on any of the four
+      // credential screens. /forgot-password and /reset-password are in the
+      // list because they are reachable from a signed-in session's browser
+      // history, and a reset flow that starts while a session is live ends in
+      // a confusing half-state — change the password from /account instead.
+      const credentialPages = ['/login', '/register', '/forgot-password', '/reset-password'];
+      if (isLoggedIn && credentialPages.includes(nextUrl.pathname)) {
         return Response.redirect(new URL('/shop', nextUrl));
       }
 

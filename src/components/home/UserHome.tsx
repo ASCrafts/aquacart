@@ -1,11 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, ArrowRight, Waves, Fish, Shell, Anchor, Star } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Search, ArrowRight, Waves, Fish, Shell, Anchor, Star, Plus, Check } from 'lucide-react';
 import heroImage from '@/images/UserHome.png';
-import { ProductCard } from '@/components/products/ProductCard';
-import type { SerializedProduct } from '@/models/Product';
+import CutoffBanner from '@/components/common/CutoffBanner';
+import { defaultKg, formatKg, formatRupees } from '@/components/products/KgStepper';
+import { useToast } from '@/hooks/use-toast';
+import { refreshCartCount } from '@/hooks/useCartCount';
+import type { StorefrontProduct } from '@/types/Product';
 
 const categories = [
   { name: 'Fish', icon: Fish, color: 'from-blue-500 to-blue-600' },
@@ -14,10 +20,138 @@ const categories = [
   { name: 'Lobster', icon: Star, color: 'from-purple-400 to-purple-500' },
 ];
 
+/**
+ * One "Freshly Stocked" card.
+ *
+ * Not `@/components/products/ProductCard` — that component still expects the
+ * deleted `@/models/Product` shape and a piece-quantity cart body. This is a
+ * self-contained kg-aware card fed directly by `getFreshCatches()`'s
+ * `StorefrontProduct` shape (product + that day's stock), quick-adding the
+ * smallest legal quantity in kilograms rather than "1".
+ */
+function FreshCatchCard({ entry }: { entry: StorefrontProduct }) {
+  const { product, stock } = entry;
+  const [isAdding, setIsAdding] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // The smallest legal add for this fish today. getFreshCatches() only
+  // guarantees sellableKg > 0, not >= minOrderKg — a fish can have a few
+  // hundred grams left, below what the shop will cut as a fresh order.
+  const kg = defaultKg(
+    { minOrderKg: product.minOrderKg, maxOrderKg: product.maxOrderKg, stepKg: product.stepKg },
+    stock.sellableKg
+  );
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    if (kg <= 0) return;
+
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id, kg }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast({
+          variant: 'destructive',
+          title: 'Could not add to cart',
+          description: data?.message ?? 'Please try again.',
+        });
+        return;
+      }
+
+      refreshCartCount();
+      setJustAdded(true);
+      toast({
+        title: 'Added to Cart',
+        description: `${formatKg(kg)} kg of ${product.name} added to your cart.`,
+      });
+      setTimeout(() => setJustAdded(false), 2000);
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Something went wrong',
+        description: 'Could not add item to your cart.',
+      });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in-up motion-reduce:animate-none">
+      <Link href={`/shop/${product.slug}`} className="block group">
+        <div className="aq-card overflow-hidden h-full flex flex-col">
+          <div className="relative aspect-[4/3] overflow-hidden bg-aq-surface-container">
+            <Image
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              height={300}
+              width={400}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              src={product.imageUrl}
+            />
+            <span className="absolute top-3 left-3 aq-badge bg-white/85 backdrop-blur-md text-aq-on-surface text-[11px]">
+              {product.category}
+            </span>
+            <span className="absolute top-3 right-3 aq-badge aq-badge-success text-[11px]">
+              Landed today
+            </span>
+          </div>
+
+          <div className="p-4 flex flex-col flex-grow">
+            <h3 className="text-[15px] font-bold text-aq-on-surface leading-snug line-clamp-1 group-hover:text-aq-primary transition-colors duration-200">
+              {product.name}
+            </h3>
+            {product.nameTamil && (
+              <p className="text-xs text-aq-on-surface-variant/80 leading-snug line-clamp-1">
+                {product.nameTamil}
+              </p>
+            )}
+
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-aq-outline-variant/10">
+              <span className="text-lg font-extrabold text-aq-primary tracking-tight">
+                {formatRupees(stock.pricePerKg)}/kg
+              </span>
+
+              <button
+                onClick={handleAddToCart}
+                disabled={isAdding || kg <= 0}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  justAdded
+                    ? 'bg-aq-tertiary-fixed text-aq-tertiary scale-110'
+                    : 'bg-aq-primary-container text-white hover:shadow-aq-hover hover:scale-105 active:scale-95'
+                }`}
+                aria-label={
+                  kg <= 0 ? `${product.name} — almost sold out` : `Add ${product.name} to cart`
+                }
+              >
+                {justAdded ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
 export default function UserHome({
   freshStock = [],
 }: {
-  freshStock?: SerializedProduct[];
+  freshStock?: StorefrontProduct[];
 }) {
   return (
     <div className="bg-aq-surface min-h-screen">
@@ -52,6 +186,11 @@ export default function UserHome({
       </section>
 
       <div className="container -mt-6 relative z-10">
+        {/* ===== Cutoff countdown ===== */}
+        <div className="mb-4">
+          <CutoffBanner />
+        </div>
+
         {/* ===== Search Bar ===== */}
         <div
           className="mb-8"
@@ -122,12 +261,12 @@ export default function UserHome({
             {/* Horizontal on phones so it never pushes the promo below the
                 fold; a plain grid once there is room for it. */}
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x md:grid md:grid-cols-3 lg:grid-cols-4 md:gap-5 md:overflow-visible">
-              {freshStock.slice(0, 8).map((product) => (
+              {freshStock.slice(0, 8).map((entry) => (
                 <div
-                  key={product._id}
+                  key={entry.product.id}
                   className="min-w-[190px] max-w-[190px] snap-start md:min-w-0 md:max-w-none"
                 >
-                  <ProductCard product={product} />
+                  <FreshCatchCard entry={entry} />
                 </div>
               ))}
             </div>

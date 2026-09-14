@@ -1,11 +1,10 @@
-
-import NextAuth, { CredentialsSignin } from 'next-auth';
+import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import dbConnect from './mongodb';
-import UserModel, { IUser } from '@/models/User';
-import { authConfig } from './auth.config';
 import jwt from 'jsonwebtoken';
+import prisma from './prisma';
+import { authConfig } from './auth.config';
+import { classify, whereForIdentity } from './identity';
 import {
   SESSION_MAX_AGE_SECONDS,
   ACCESS_TOKEN_REFRESH_WINDOW_SECONDS,
@@ -37,6 +36,19 @@ function needsRefresh(token: unknown): boolean {
   const secondsLeft = decoded.exp - Math.floor(Date.now() / 1000);
   return secondsLeft < ACCESS_TOKEN_REFRESH_WINDOW_SECONDS;
 }
+
+/**
+ * A real bcrypt hash of a string nobody knows, compared against when the
+ * lookup finds nothing.
+ *
+ * Without it, "no such user" returns in a millisecond while a wrong password
+ * takes the ~70ms a cost-10 compare costs, and that difference is a reliable
+ * oracle for "does this number have an account" — the exact question the
+ * availability endpoint is rate-limited to protect. Hard-coded rather than
+ * hashed at module load so a cold start does not pay for it.
+ */
+const DUMMY_PASSWORD_HASH =
+  '$2a$10$Za6GNL4jpx1FcNpWldGwaunfXh8ZVec9Uvaz2GLLZY3lbjCm0f9te';
 
 // A localhost AUTH_URL in a production deploy (e.g. copied into Netlify env
 // vars from a dev .env) would take precedence over trustHost and send every
@@ -76,49 +88,72 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     CredentialsProvider({
       name: 'Credentials',
+      /**
+       * ONE field. The customer types whichever of their three keys they
+       * remember — username, phone or email — and classify() works out which
+       * it is. Asking them to pick the kind first is asking them to remember
+       * how they signed up, which is precisely what they have forgotten.
+       */
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        identifier: { label: 'Username, phone or email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        await dbConnect();
+        const identity = classify(
+          typeof credentials?.identifier === 'string' ? credentials.identifier : ''
+        );
+        const password =
+          typeof credentials?.password === 'string' ? credentials.password : '';
 
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
+        // classify() returns null for input that cannot be any of the three
+        // shapes (an empty box, a landline). There is no user to compare
+        // against and no timing to protect, because nothing was looked up.
+        if (!identity || !password) return null;
 
-        const user: IUser | null = await UserModel.findOne({ email: credentials.email as string }).select('+password');
+        const user = await prisma.user.findUnique({
+          where: whereForIdentity(identity),
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            password: true,
+            phoneVerifiedAt: true,
+          },
+        });
 
-        if (!user) {
-          return null;
-        }
-        
-        if (!user.isEmailVerified) {
-            throw new CredentialsSignin('Email not verified. Please check your inbox.');
-        }
+        // ALWAYS compare, even when there is no row. The result is discarded on
+        // a miss; the point is that the response takes the same ~70ms either
+        // way. Returning early here would leak account existence through the
+        // clock to anyone with a stopwatch.
+        const matches = await bcrypt.compare(
+          password,
+          user?.password ?? DUMMY_PASSWORD_HASH
+        );
 
-        const isPasswordMatch = await bcrypt.compare(credentials.password as string, user.password as string);
+        if (!user || !matches) return null;
 
-        if (!isPasswordMatch) {
-          return null;
-        }
+        // The login gate. `phoneVerifiedAt` is set only by the server after
+        // firebase-admin verified an SMS challenge, and the column is non-null
+        // in the schema, so this should be unreachable — it stays because the
+        // day it becomes reachable (a hand-written row, a restored backup,
+        // a seeded fixture) is the day an unproven account can sign in.
+        if (!user.phoneVerifiedAt) return null;
 
         const secret = process.env.NEXTAUTH_SECRET;
         if (!secret) {
-            throw new Error('NEXTAUTH_SECRET is not set');
+          throw new Error('NEXTAUTH_SECRET is not set');
         }
 
-        const token = signAccessToken((user as any)._id.toString(), user.role, secret);
-
-        const userObject = {
-          id: (user as any)._id.toString(),
+        return {
+          id: user.id,
           name: user.name,
+          // Null for the many accounts with no email. NextAuth's User type
+          // allows it; nothing downstream may assume an address exists.
           email: user.email,
           role: user.role,
-          accessToken: token,
+          accessToken: signAccessToken(user.id, user.role, secret),
         };
-
-        return userObject;
       },
     }),
   ],

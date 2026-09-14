@@ -8,7 +8,15 @@ const prismaClientSingleton = () => {
   // (~1s) before the client can serve its first real query, which is pure
   // latency on every cold serverless start. A production database is not
   // empty and does not want to self-heal by wiping itself into a seed.
-  if (process.env.NODE_ENV === 'production') return client;
+  //
+  // Also off for AQUACART_SCRIPT (set by db:seed / db:import-fish in
+  // package.json). Both scripts import this client and then write to the
+  // same tables themselves; without this guard the sentinel's fire-and-forget
+  // self-heal races the script's own writes and one side loses to a unique
+  // constraint — seedDatabase() and scripts/import-fish.ts both upsert
+  // Product by slug, so two concurrent callers is a real, not theoretical,
+  // P2002.
+  if (process.env.NODE_ENV === 'production' || process.env.AQUACART_SCRIPT) return client;
 
   // Run Database Sentinel check asynchronously on startup
   (async () => {

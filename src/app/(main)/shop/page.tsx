@@ -1,23 +1,28 @@
-import { ProductCard } from '@/components/products/ProductCard';
-import { SerializedProduct } from '@/models/Product';
-import { getAllProducts, getCategories } from '@/lib/products';
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
+import { SlidersHorizontal } from 'lucide-react';
+import { ProductCard } from '@/components/products/ProductCard';
 import ShopSearch from '@/components/products/ShopSearch';
+import { CutoffCountdown } from '@/components/products/StockBadge';
+import { getCategories, getShopListing, type StorefrontEntry } from '@/lib/products';
 import { searchProducts } from '@/lib/search';
 
-async function getProducts(search?: string, category?: string) {
-  const all = await getAllProducts();
-  const inCategory =
-    category && category !== 'all' ? all.filter((p) => p.category === category) : all;
-
-  // Ranking happens in memory so a shopper can type English, Tamil or Tanglish
-  // and still land on the right fish — see searchProducts for the scoring.
-  if (!search) return { matches: inCategory, suggestions: [] as SerializedProduct[] };
-  return searchProducts(inCategory, search);
-}
+/**
+ * The shop grid.
+ *
+ * Public — no login wall. The old page redirected anonymous visitors to
+ * /login before they could see a single fish; nothing in the R1–R7 contract
+ * asks for that, the product detail page next to this one has never gated
+ * itself that way, and a storefront a search engine can't see is a storefront
+ * that loses to one it can. Adding to cart still requires an account (see
+ * ProductCard / ProductDetailClient), which is the actual point where an
+ * identity is needed.
+ *
+ * Always dynamic: `getShopListing()` reads DayStock, which moves on every
+ * checkout and flips at the 19:30 cutoff. Caching this page would be the same
+ * mistake src/lib/products.ts's own doc comment warns against — a shelf that
+ * oversells.
+ */
+export const dynamic = 'force-dynamic';
 
 type SearchParams = Promise<{
   search?: string;
@@ -28,18 +33,31 @@ interface ShopPageProps {
   searchParams: SearchParams;
 }
 
-export default async function ShopPage({ searchParams }: ShopPageProps) {
-  const session = await auth();
-  if (!session) redirect('/login');
+/** Category filter, then the same fuzzy/bilingual ranking as the header search. */
+function filterAndSearch(rows: StorefrontEntry[], search: string | undefined, category: string | undefined) {
+  const inCategory =
+    category && category !== 'all' ? rows.filter((r) => r.product.category === category) : rows;
 
+  if (!search) return { matches: inCategory, suggestions: [] as StorefrontEntry[] };
+
+  const byId = new Map(inCategory.map((r) => [r.product.id, r]));
+  const { matches, suggestions } = searchProducts(
+    inCategory.map((r) => r.product),
+    search
+  );
+  const resolve = (list: typeof matches) =>
+    list.map((p) => byId.get(p.id)).filter((r): r is StorefrontEntry => Boolean(r));
+
+  return { matches: resolve(matches), suggestions: resolve(suggestions) };
+}
+
+export default async function ShopPage({ searchParams }: ShopPageProps) {
   const resolvedParams = await searchParams;
   const search = resolvedParams.search;
   const category = resolvedParams.category;
 
-  const [{ matches: products, suggestions }, categories] = await Promise.all([
-    getProducts(search, category),
-    getCategories(),
-  ]);
+  const [{ rows }, categories] = await Promise.all([getShopListing(), getCategories()]);
+  const { matches: products, suggestions } = filterAndSearch(rows, search, category);
 
   return (
     <div className="bg-aq-surface min-h-screen">
@@ -58,6 +76,12 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       </section>
 
       <div className="container py-6 md:py-10">
+        {/* The 19:30 cutoff is a true deadline, not a growth tactic — say it
+            plainly, right where a shopper decides whether to order today. */}
+        <div className="aq-card-static mb-4 flex items-center justify-center px-4 py-2.5">
+          <CutoffCountdown />
+        </div>
+
         {/* Category filter chips */}
         {categories.length > 0 && (
           <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-4 mb-2" id="category-filters">
@@ -115,8 +139,8 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                   The closest matches we have for &ldquo;{search}&rdquo;.
                 </p>
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:gap-6">
-                  {suggestions.map((product) => (
-                    <ProductCard key={product._id} product={product} />
+                  {suggestions.map((entry) => (
+                    <ProductCard key={entry.product.id} entry={entry} />
                   ))}
                 </div>
               </div>
@@ -124,8 +148,8 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:gap-6" id="products-grid">
-            {products.map((product) => (
-              <ProductCard key={product._id} product={product} />
+            {products.map((entry) => (
+              <ProductCard key={entry.product.id} entry={entry} />
             ))}
           </div>
         )}

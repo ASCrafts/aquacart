@@ -3,10 +3,19 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useState, useEffect, useRef } from 'react';
-import { Loader2, ExternalLink, Upload, ImagePlus, Link2, DollarSign, Package, FileText, Tag } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  AlertCircle,
+  DollarSign,
+  FileText,
+  ImageIcon,
+  Link2,
+  Loader2,
+  Package,
+  Scale,
+  Tag,
+} from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,12 +36,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { SerializedProduct } from '@/models/Product';
+import { slugify } from '@/lib/fish-catalog';
 import type { Category } from '@/lib/fish-catalog';
 
-// Must stay in step with the `Category` union in src/lib/fish-catalog.ts —
-// a category offered here that the catalog does not use (or vice versa) means
+/**
+ * "Edit details" — the fish's IDENTITY and order rules. NEVER today's kilos
+ * and NEVER today's price: those live on DayStock and are edited on
+ * /admin/stock (R3). This form only ever touches the Product row, via
+ * POST /api/admin/products (create) or PUT /api/admin/products/[id] (edit).
+ *
+ * Rendered two ways:
+ *  - standalone, one hop from the stock sheet, at /admin/products/[id]
+ *    (src/app/(main)/admin/products/[id]/page.tsx — not ours; it passes the
+ *    full Prisma Product row as `initialData` and a bound Server Action as
+ *    `onSuccess`)
+ *  - inside a dialog from ProductManager, with `initialData` omitted for a
+ *    brand-new fish and a plain client callback as `onSuccess`
+ */
+
+// Must stay in step with the `Category` union in src/lib/fish-catalog.ts — a
+// category offered here that the catalog does not use (or vice versa) means
 // an admin silently re-files a product under a category the shop never shows.
 const CATEGORIES: { value: Category; emoji: string }[] = [
   { value: 'Fish', emoji: '🐟' },
@@ -43,142 +68,154 @@ const CATEGORIES: { value: Category; emoji: string }[] = [
   { value: 'Squid', emoji: '🦑' },
 ];
 
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
+const formSchema = z
+  .object({
+    name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+    nameTamil: z.string().optional(),
+    aliases: z.string().optional(),
+    slug: z
+      .string()
+      .min(2, { message: 'Slug must be at least 2 characters.' })
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+        message: 'Slug must be URL-safe (e.g. fresh-salmon).',
+      }),
+    description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
+    imageUrl: z.string().min(1, { message: 'An image URL is required.' }),
+    imageHint: z.string().optional(),
+    category: z.string().min(1, { message: 'Please select a category.' }),
+    minOrderKg: z.coerce.number().min(0.05, { message: 'Minimum order must be at least 0.05 kg.' }),
+    maxOrderKg: z.coerce.number().min(0.05, { message: 'Maximum order must be at least 0.05 kg.' }),
+    stepKg: z.coerce.number().min(0.05, { message: 'Step must be at least 0.05 kg.' }),
+    // A blank input arrives as "" — coerced straight through z.coerce.number()
+    // that would become 0, not "no piece weight". Preprocess so an empty
+    // string skips coercion entirely and .optional() actually applies.
+    avgPieceWeight: z.preprocess(
+      (v) => (v === '' || v === null ? undefined : v),
+      z.coerce.number().min(0).optional()
+    ),
+    basePricePerKg: z.coerce.number().min(0, { message: 'Price cannot be negative.' }),
+    availability: z.boolean(),
+  })
+  .refine((data) => data.minOrderKg <= data.maxOrderKg, {
+    message: 'Minimum order cannot exceed the maximum.',
+    path: ['maxOrderKg'],
+  });
+
+type FormValues = z.infer<typeof formSchema>;
+
+/**
+ * Only the columns this form ever reads or writes. A `Pick` rather than the
+ * full Prisma `Product` so both callers — the server page passing the raw row
+ * and ProductManager passing a JSON-fetched one — satisfy it without a cast.
+ */
+export interface ProductFormInitialData {
+  id: string;
+  name: string;
+  nameTamil: string | null;
+  aliases: string | null;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  imageHint: string | null;
+  category: string;
+  minOrderKg: number;
+  maxOrderKg: number;
+  stepKg: number;
+  avgPieceWeight: number | null;
+  basePricePerKg: number;
+  availability: boolean;
 }
 
-const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  nameTamil: z.string().optional(),
-  aliases: z.string().optional(),
-  slug: z.string().min(2, { message: 'Slug must be at least 2 characters.' }).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'Slug must be URL-safe (e.g. fresh-salmon).' }),
-  description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
-  price: z.coerce.number().min(0.01, { message: 'Price must be greater than 0.' }),
-  pricePerKg: z.coerce.number().min(0, { message: 'Price per Kg cannot be negative.' }),
-  category: z.string().min(1, { message: 'Please select a category.' }),
-  quantity: z.coerce.number().min(0, { message: 'Quantity cannot be negative.' }),
-  stockKg: z.coerce.number().min(0, { message: 'Weight (Kg) cannot be negative.' }),
-  maxQuantity: z.coerce.number().min(1, { message: 'Max quantity must be at least 1.' }),
-  image: z.any().optional(),
-});
+export interface ProductFormProps {
+  /** Omit (or null) to create a new product. */
+  initialData?: ProductFormInitialData | null;
+  /** Called after a successful save — a bound Server Action or a plain callback. */
+  onSuccess: () => void | Promise<void>;
+}
 
-type ProductFormProps = {
-  initialData?: SerializedProduct | null;
-  onSuccess: () => void;
-};
-
-export default function ProductForm({ onSuccess, initialData }: ProductFormProps) {
+export default function ProductForm({ initialData, onSuccess }: ProductFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isEdit = !!initialData;
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: initialData?.name || '',
-      nameTamil: initialData?.nameTamil || '',
-      aliases: initialData?.aliases || '',
-      slug: initialData?.slug || '',
-      description: initialData?.description || '',
-      price: initialData?.price || 0,
-      pricePerKg: initialData?.pricePerKg || 0,
-      category: initialData?.category || '',
-      quantity: initialData?.quantity || 1,
-      stockKg: initialData?.stockKg || 0,
-      maxQuantity: initialData?.maxQuantity || 99,
+      name: initialData?.name ?? '',
+      nameTamil: initialData?.nameTamil ?? '',
+      aliases: initialData?.aliases ?? '',
+      slug: initialData?.slug ?? '',
+      description: initialData?.description ?? '',
+      imageUrl: initialData?.imageUrl ?? '',
+      imageHint: initialData?.imageHint ?? '',
+      category: initialData?.category ?? '',
+      minOrderKg: initialData?.minOrderKg ?? 0.25,
+      maxOrderKg: initialData?.maxOrderKg ?? 10,
+      stepKg: initialData?.stepKg ?? 0.25,
+      avgPieceWeight: initialData?.avgPieceWeight ?? undefined,
+      basePricePerKg: initialData?.basePricePerKg ?? 0,
+      availability: initialData?.availability ?? true,
     },
   });
 
-  // Auto-generate slug from product name
+  // Auto-generate the slug from the name, but only while creating — editing
+  // an existing fish's name must never silently move its URL out from under
+  // a link someone already shared.
   const nameValue = form.watch('name');
   const slugValue = form.watch('slug');
-
+  const imageUrlValue = form.watch('imageUrl');
   useEffect(() => {
     if (!isEdit && nameValue) {
-      form.setValue('slug', generateSlug(nameValue), { shouldValidate: true });
+      form.setValue('slug', slugify(nameValue), { shouldValidate: true });
     }
   }, [nameValue, isEdit, form]);
 
-  const handleImageChange = (files: FileList | null) => {
-    if (files && files[0]) {
-      form.setValue('image', files);
-      const reader = new FileReader();
-      reader.onload = (e) => setImagePreview(e.target?.result as string);
-      reader.readAsDataURL(files[0]);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleImageChange(e.dataTransfer.files);
-  };
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormValues) {
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('name', values.name);
-      formData.append('nameTamil', values.nameTamil || '');
-      formData.append('aliases', values.aliases || '');
-      formData.append('slug', values.slug);
-      formData.append('description', values.description);
-      formData.append('price', values.price.toString());
-      formData.append('pricePerKg', values.pricePerKg.toString());
-      formData.append('category', values.category);
-      formData.append('quantity', values.quantity.toString());
-      formData.append('stockKg', values.stockKg.toString());
-      formData.append('maxQuantity', values.maxQuantity.toString());
+      const payload = {
+        name: values.name,
+        nameTamil: values.nameTamil || null,
+        aliases: values.aliases || null,
+        slug: values.slug,
+        description: values.description,
+        imageUrl: values.imageUrl,
+        imageHint: values.imageHint || null,
+        category: values.category,
+        minOrderKg: values.minOrderKg,
+        maxOrderKg: values.maxOrderKg,
+        stepKg: values.stepKg,
+        avgPieceWeight: values.avgPieceWeight ?? null,
+        basePricePerKg: values.basePricePerKg,
+        availability: values.availability,
+      };
 
-      if (values.image && values.image.length > 0) {
-        formData.append('image', values.image[0]);
-      } else if (!isEdit) {
-        throw new Error('An image file is required to create a new product.');
-      }
-
-      const url = isEdit ? `/api/products/${initialData._id}` : '/api/products';
+      const url = isEdit ? `/api/admin/products/${initialData.id}` : '/api/admin/products';
       const response = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Something went wrong');
       }
 
-      const productSlug = data.slug || values.slug;
       toast({
-        title: isEdit ? '✏️ Product Updated' : '🎉 Product Created!',
-        description: isEdit ? 'Changes saved successfully.' : (
-          <span className="flex items-center gap-1.5">
-            Live at{' '}
-            <Link href={`/shop/${productSlug}`} className="underline font-semibold text-aq-primary inline-flex items-center gap-1 hover:opacity-80 transition-opacity">
-              /shop/{productSlug} <ExternalLink className="w-3 h-3" />
-            </Link>
-          </span>
-        ),
+        title: isEdit ? '✏️ Details saved' : '🎉 Product created',
+        description: isEdit
+          ? "Changes saved. Today's kilos and price still live on the stock sheet."
+          : `Added to the catalog as /shop/${data.slug ?? values.slug}. Declare its stock on the stock sheet to make it sellable.`,
       });
-      
-      form.reset();
-      setImagePreview(null);
-      onSuccess();
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message,
-      });
+
+      if (!isEdit) {
+        form.reset();
+      }
+      await onSuccess();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong.';
+      toast({ variant: 'destructive', title: 'Error', description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -187,61 +224,89 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* ─── Section: Photo ─── */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-5 h-5 rounded-md bg-aq-primary-fixed flex items-center justify-center">
+              <ImageIcon className="w-3 h-3 text-aq-primary" />
+            </div>
+            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">
+              Photo
+            </span>
+          </div>
 
-        {/* ─── Section 1: Image Upload ─── */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          className={`
-            relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-300 overflow-hidden
-            ${isDragging
-              ? 'border-aq-primary bg-aq-primary-fixed/30 scale-[1.01]'
-              : imagePreview
-                ? 'border-aq-outline-variant/30 hover:border-aq-primary/50'
-                : 'border-aq-outline-variant/40 hover:border-aq-primary/60 bg-aq-surface-container/50'
-            }
-          `}
-        >
-          {imagePreview ? (
-            <div className="relative aspect-[16/9] w-full">
-              <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                <span className="text-white text-xs font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                  <Upload className="w-3 h-3" /> Change image
-                </span>
+          <div className="rounded-2xl border border-aq-outline-variant/30 bg-aq-surface-container-low overflow-hidden">
+            {imageUrlValue ? (
+              <div className="relative aspect-[16/9] w-full bg-aq-surface-container-high">
+                {/* Admin-typed URL, arbitrary domain — a plain <img> avoids the
+                    next/image remote-domain allowlist for content nobody
+                    pre-configured. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrlValue}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
               </div>
+            ) : null}
+            <div className="p-4">
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                      Image URL
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://..."
+                        className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-lowest focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="imageHint"
+                render={({ field }) => (
+                  <FormItem className="mt-3">
+                    <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                      Image search hint
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. seer fish steaks"
+                        className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-lowest focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
+                        {...field}
+                      />
+                    </FormControl>
+                    <p className="text-[11px] text-aq-on-surface-variant">
+                      Used only as an `data-ai-hint` fallback, never shown to a customer.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10 px-4">
-              <div className="w-12 h-12 rounded-2xl bg-aq-primary-fixed flex items-center justify-center mb-3">
-                <ImagePlus className="w-6 h-6 text-aq-primary" />
-              </div>
-              <p className="text-sm font-semibold text-aq-on-surface">
-                {isEdit ? 'Upload new image' : 'Drop product image here'}
-              </p>
-              <p className="text-xs text-aq-on-surface-variant mt-1">
-                or click to browse • PNG, JPG, WebP
-              </p>
-            </div>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleImageChange(e.target.files)}
-          />
+          </div>
         </div>
 
-        {/* ─── Section 2: Identity ─── */}
+        {/* ─── Section: Identity ─── */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-5 h-5 rounded-md bg-aq-primary-fixed flex items-center justify-center">
               <FileText className="w-3 h-3 text-aq-primary" />
             </div>
-            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">Identity</span>
+            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">
+              Identity
+            </span>
           </div>
 
           <FormField
@@ -249,10 +314,12 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Product Name</FormLabel>
+                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                  Product Name
+                </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="e.g. Wild Alaskan Salmon"
+                    placeholder="e.g. Seer Fish"
                     className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all placeholder:text-aq-outline/50"
                     {...field}
                   />
@@ -267,7 +334,9 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
             name="nameTamil"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Tamil Name</FormLabel>
+                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                  Tamil Name
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="e.g. வஞ்சிரம்"
@@ -296,14 +365,14 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                   />
                 </FormControl>
                 <p className="text-[11px] text-aq-on-surface-variant">
-                  Every spelling a customer might type, separated by <code>|</code>. Never shown on the site.
+                  Every spelling a customer might type, separated by <code>|</code>. Never shown on
+                  the site.
                 </p>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Slug with live URL preview */}
           <FormField
             control={form.control}
             name="slug"
@@ -314,9 +383,11 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-aq-outline select-none">/shop/</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-aq-outline select-none">
+                      /shop/
+                    </span>
                     <Input
-                      placeholder="fresh-salmon"
+                      placeholder="seer-fish"
                       className="h-11 pl-[52px] rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all font-mono text-sm placeholder:text-aq-outline/50"
                       {...field}
                     />
@@ -361,84 +432,31 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
           />
         </div>
 
-        {/* ─── Section 3: Pricing ─── */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-5 h-5 rounded-md bg-aq-tertiary-fixed/40 flex items-center justify-center">
-              <DollarSign className="w-3 h-3 text-aq-tertiary" />
-            </div>
-            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">Pricing</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Price / Piece</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">₹</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        className="h-11 pl-7 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="pricePerKg"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Price / Kg</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">₹</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        className="h-11 pl-7 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        {/* ─── Section 4: Inventory ─── */}
+        {/* ─── Section: Order rules ─── */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-5 h-5 rounded-md bg-aq-secondary-container/30 flex items-center justify-center">
-              <Package className="w-3 h-3 text-aq-secondary" />
+              <Scale className="w-3 h-3 text-aq-secondary" />
             </div>
-            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">Inventory</span>
+            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">
+              Order rules (kg)
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <FormField
               control={form.control}
-              name="quantity"
+              name="minOrderKg"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Stock (Pieces)</FormLabel>
+                  <FormLabel className="text-[11px] font-semibold text-aq-on-surface-variant">
+                    Min order
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      placeholder="1"
+                      step="0.05"
+                      inputMode="decimal"
                       className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
                       {...field}
                     />
@@ -447,18 +465,40 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
-              name="stockKg"
+              name="maxOrderKg"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Stock (Kg)</FormLabel>
+                  <FormLabel className="text-[11px] font-semibold text-aq-on-surface-variant">
+                    Max order
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      step="0.1"
-                      placeholder="0.0"
+                      step="0.05"
+                      inputMode="decimal"
+                      className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="stepKg"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-[11px] font-semibold text-aq-on-surface-variant">
+                    Step
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.05"
+                      inputMode="decimal"
                       className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
                       {...field}
                     />
@@ -471,21 +511,27 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
 
           <FormField
             control={form.control}
-            name="maxQuantity"
+            name="avgPieceWeight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Max Order Quantity</FormLabel>
+                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant flex items-center gap-1.5">
+                  <Package className="w-3 h-3" /> Avg. piece weight (kg)
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    min={1}
-                    placeholder="99"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Leave blank if pieces don't apply"
                     className="h-11 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
                     {...field}
+                    value={field.value ?? ''}
                   />
                 </FormControl>
                 <FormDescription className="text-[11px] text-aq-on-surface-variant">
-                  Maximum pieces a customer can add to cart
+                  Display helper only — renders "≈ 1 fish, about 600 g" next to a kg quantity. The
+                  order itself is always in kilos. Leave blank for prawns, squid rings, anything
+                  with no meaningful piece.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -493,16 +539,72 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
           />
         </div>
 
-        {/* ─── Section 5: Description ─── */}
+        {/* ─── Section: Default price ─── */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-5 h-5 rounded-md bg-aq-tertiary-fixed/40 flex items-center justify-center">
+              <DollarSign className="w-3 h-3 text-aq-tertiary" />
+            </div>
+            <span className="text-xs font-bold text-aq-on-surface-variant uppercase tracking-wider">
+              Default price
+            </span>
+          </div>
+
+          <FormField
+            control={form.control}
+            name="basePricePerKg"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                  Base price / kg
+                </FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-aq-primary">
+                      ₹
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      className="h-11 pl-7 rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 transition-all"
+                      {...field}
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Impossible to miss: this number is not what anyone gets charged. */}
+          <div className="flex gap-2.5 rounded-xl border border-aq-tertiary/30 bg-aq-tertiary-fixed/15 p-3">
+            <AlertCircle className="h-4 w-4 shrink-0 text-aq-tertiary mt-0.5" aria-hidden />
+            <p className="text-[11px] leading-relaxed text-aq-on-surface-variant">
+              <strong className="text-aq-on-surface">Not a sellable price.</strong> This is only
+              what a brand-new day&apos;s stock row is pre-filled with. Today&apos;s actual ₹/kg —
+              the one customers are charged — is set on{' '}
+              <Link href="/admin/stock" className="font-semibold text-aq-primary underline">
+                /admin/stock
+              </Link>
+              , per catch, every day.
+            </p>
+          </div>
+        </div>
+
+        {/* ─── Section: Description ─── */}
         <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">Description</FormLabel>
+              <FormLabel className="text-xs font-semibold text-aq-on-surface-variant">
+                Description
+              </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Describe the product — origin, taste, preparation tips..."
+                  placeholder="Describe the fish — origin, taste, preparation tips..."
                   className="min-h-[100px] rounded-xl border-aq-outline-variant/30 bg-aq-surface-container-low focus:border-aq-primary focus:ring-1 focus:ring-aq-primary/20 resize-none transition-all placeholder:text-aq-outline/50 leading-relaxed"
                   {...field}
                 />
@@ -512,17 +614,37 @@ export default function ProductForm({ onSuccess, initialData }: ProductFormProps
           )}
         />
 
+        {/* ─── Section: Availability ─── */}
+        <FormField
+          control={form.control}
+          name="availability"
+          render={({ field }) => (
+            <FormItem className="flex items-center justify-between rounded-xl border border-aq-outline-variant/30 bg-aq-surface-container-low p-3.5">
+              <div className="pr-4">
+                <FormLabel className="text-xs font-semibold text-aq-on-surface">
+                  Listed in the shop
+                </FormLabel>
+                <p className="text-[11px] text-aq-on-surface-variant mt-0.5">
+                  Off delists this fish entirely — it stops here, not on the stock sheet. Whether
+                  it&apos;s sellable TODAY is decided separately, by whether today&apos;s catch has
+                  been declared.
+                </p>
+              </div>
+              <FormControl>
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         {/* ─── Submit ─── */}
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-12 rounded-xl bg-aq-gradient-primary text-white font-semibold text-sm shadow-aq-button hover:shadow-aq-hover hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none"
+          className="touch-target w-full h-12 rounded-xl bg-aq-gradient-primary text-white font-semibold text-sm shadow-aq-button hover:shadow-aq-hover hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none"
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isSubmitting
-            ? (isEdit ? 'Saving changes...' : 'Publishing product...')
-            : (isEdit ? 'Save Changes' : '✨ Publish Product')
-          }
+          {isSubmitting ? 'Saving...' : isEdit ? 'Save changes' : '✨ Create product'}
         </Button>
       </form>
     </Form>

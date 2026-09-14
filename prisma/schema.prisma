@@ -1,5 +1,13 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// AquaCart schema — rev 3 (kilos-only, per-day catch).
+//
+// Two rules govern everything below.
+//
+// 1. Stock is measured in kilograms and nothing else. There is one pool per
+//    fish per business day. `avgPieceWeight` renders "≈ 1 fish, about 600 g" as
+//    a display helper; the transaction is always in kg.
+// 2. A catch is sellable for exactly one business day (04:00 -> 04:00 IST).
+//    Yesterday's rows stop being sellable at 04:00 with no admin action, which
+//    is why sellability is a property of DayStock and never of Product.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,103 +19,210 @@ datasource db {
 }
 
 model User {
-  id                           String         @id @default(cuid()) @map("_id")
-  name                         String
-  email                        String         @unique
-  phone                        String
-  password                     String
-  role                         String         @default("customer")
-  isEmailVerified              Boolean        @default(false)
-  emailVerificationToken       String?
-  emailVerificationTokenExpiry DateTime?
-  resetPasswordToken           String?
-  resetPasswordTokenExpiry     DateTime?
-  tempEmail                    String?
-  tempEmailVerificationToken   String?
-  tempEmailVerificationTokenExpiry DateTime?
-  createdAt                    DateTime       @default(now())
-  updatedAt                    DateTime       @updatedAt
-  
-  addresses                    Address[]
-  cartItems                    CartItem[]
-  orders                       Order[]
-  reviews                      Review[]
+  id       String @id @default(cuid()) @map("_id")
+  name     String
+  // Three keys, one login field. `username` is never all digits (see
+  // src/lib/identity.ts) so classify() can tell a username from a phone
+  // number without asking the user which one they typed.
+  username String @unique @db.VarChar(20)
+  phone    String @unique @db.VarChar(16)
+  // Set only by the server after firebase-admin verifyIdToken succeeds. This
+  // is the login gate, so it is non-null: an account cannot exist without a
+  // proven phone number.
+  phoneVerifiedAt DateTime
+  // Optional. MySQL allows many NULLs in a unique index, so "unique when
+  // present" is exactly what @unique gives us here.
+  email    String? @unique
+  password String
+  role     String  @default("customer")
+
+  // Marketing consent is stored separately from the transactional channel on
+  // purpose: revoking marketing must never silence order-tracking pushes.
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses   Address[]
+  cartItems   CartItem[]
+  orders      Order[]
+  reviews     Review[]
+  pushDevices PushDevice[]
+  catchAlerts CatchAlert[]
 }
 
 model Address {
-  id         String   @id @default(cuid()) @map("_id")
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  street     String
-  city       String
-  state      String
-  zipCode    String
-  isDefault  Boolean  @default(false)
+  id        String  @id @default(cuid()) @map("_id")
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  isDefault Boolean @default(false)
+
+  @@index([userId])
 }
 
 model CartItem {
-  id         String   @id @default(cuid()) @map("_id")
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity   Float
-  unit       String   @default("piece") // "piece" or "kg"
+  id        String  @id @default(cuid()) @map("_id")
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Kilograms. There is no `unit` column any more — the bug it caused (a kg
+  // order validating and reserving against the piece pool) is gone with it.
+  kg        Float
+
+  // One line per product per user, so "add again" increments rather than
+  // creating a second row the cart then has to reconcile.
+  @@unique([userId, productId])
+  @@index([productId])
 }
 
 model Product {
-  id            String     @id @default(cuid()) @map("_id")
-  name          String
-  nameTamil     String?    // Tamil script name, e.g. வஞ்சிரம்
-  aliases       String?    @db.Text // pipe-separated search spellings: "vanjaram|vanjiram|king fish"
-  slug          String     @unique
-  description   String     @db.Text
-  price         Float
-  pricePerKg    Float      @default(0)
-  unit          String     @default("piece") // what `price` buys: "piece" or "kg"
-  imageUrl      String     @db.Text
-  imageHint     String?
-  category      String
-  quantity      Float      // stock quantity (pieces)
-  stockKg       Float      @default(0)
-  reservedStock Float      @default(0)
-  maxQuantity   Int        @default(99)
-  availability  Boolean    @default(true)
-  // Bumped only when stock is replenished, never by a sale. `updatedAt` is
-  // useless for "fresh" because checkout decrements bump it too, which would
-  // make the best-selling items look like the newest catch.
-  restockedAt   DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id          String  @id @default(cuid()) @map("_id")
+  name        String
+  nameTamil   String? // Tamil script name, e.g. வஞ்சிரம்
+  aliases     String? @db.Text // pipe-separated search spellings
+  slug        String  @unique
+  description String  @db.Text
+  imageUrl    String  @db.Text
+  imageHint   String?
+  category    String
 
-  cartItems     CartItem[]
-  orderItems    OrderItem[]
-  reviews       Review[]
+  // Order-size rules, in kg. 250 g steps by default.
+  minOrderKg Float @default(0.25)
+  maxOrderKg Float @default(10)
+  stepKg     Float @default(0.25)
+
+  // Optional. Drives "≈ 1 fish, about 600 g" next to a kg quantity. Null for
+  // anything that has no meaningful piece (prawns, squid rings).
+  avgPieceWeight Float?
+
+  // NOT the sellable price. The price an order is charged always comes from
+  // that day's DayStock row; this is only the number the admin sheet pre-fills
+  // a brand-new day with, and the "from ₹X/kg" shown for a fish that has no
+  // row today at all.
+  basePricePerKg Float @default(0)
+
+  // Per 100 g raw. Validated by NutritionSchema in src/lib/nutrition.ts in
+  // both directions; the renderer safeParses and shows nothing rather than
+  // something broken.
+  nutrition Json?
+
+  // Admin kill switch for delisting a fish entirely. Day-to-day availability
+  // is decided by DayStock, not by this flag.
+  availability Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dayStocks   DayStock[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+  catchAlerts CatchAlert[]
+
+  @@index([category])
+}
+
+/// One row per fish per business day. This is the only place stock exists.
+model DayStock {
+  id        String  @id @default(cuid()) @map("_id")
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Business day in IST, "YYYY-MM-DD". See src/lib/business-day.ts.
+  day       String  @db.Char(10)
+
+  planned  Float @default(0) // kg expected — the pre-order cap
+  declared Float @default(0) // kg that landed — the truth
+  reserved Float @default(0) // kg held by live orders
+  sold     Float @default(0) // kg handed over — never undone
+
+  /// null = not declared yet. Also orders the admin rail (undeclared first).
+  declaredAt DateTime?
+
+  /// Price belongs to the catch, not the fish. Pinning it to the day means an
+  /// order's price is provably the one that was displayed, and yesterday's
+  /// price can never leak into today.
+  pricePerKg Float
+
+  /// Set when allocate() last ran for this row, so a re-declaration can tell
+  /// "never allocated" from "allocated and unchanged".
+  allocatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, day])
+  @@index([day, declaredAt])
+}
+
+/// Append-only audit of every number the admin (or the AI draft, or a job)
+/// changed. Makes "who dropped the price at 6pm" answerable.
+model StockLog {
+  id        String  @id @default(cuid()) @map("_id")
+  productId String
+  day       String  @db.Char(10)
+  field     String // planned | declared | pricePerKg
+  fromValue Float?
+  toValue   Float
+  actorId   String?
+  source    String  @default("admin") // admin | ai-draft | system | undo
+  note      String? @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([productId, day])
+  @@index([createdAt])
 }
 
 model Order {
-  id                String      @id @default(cuid()) @map("_id")
-  userId            String
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customerName      String
-  customerEmail     String
-  customerPhone     String
-  totalAmount       Float
-  deliveryAddress   String      @db.Text // Store as a JSON string
-  paymentMethod     String      @default("Razorpay")
-  paymentStatus     String      @default("Pending")
-  orderStatus       String      @default("Pending")
-  refundStatus      String      @default("None")
-  refundReason      String?
-  razorpayOrderId   String?
-  razorpayPaymentId String?
-  razorpaySignature String?
-  invoiceUrl        String?     @db.Text
-  idempotencyKey    String?     @unique
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id            String  @id @default(cuid()) @map("_id")
+  userId        String
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerName  String
+  /// Contact of record. Email is optional everywhere now.
+  customerPhone String
+  customerEmail String?
 
-  items             OrderItem[]
+  /// The business day whose catch this order is sold against, decided
+  /// server-side by fulfilDay() at checkout. Never sent by the client.
+  fulfilDay String @db.Char(10)
+  /// MORNING | EVENING — the delivery run, derived from the same elapsed
+  /// minutes that picked fulfilDay. See src/lib/business-day.ts.
+  slot      String @default("MORNING")
+
+  totalAmount    Float
+  refundedAmount Float @default(0)
+
+  deliveryAddress String @db.Text // JSON string
+  paymentMethod   String @default("Razorpay")
+  paymentStatus   String @default("Pending Payment")
+  orderStatus     String @default("Pending")
+  /// None | Partial | Full | Failed
+  refundStatus    String @default("None")
+  refundReason    String?
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+  invoiceUrl        String? @db.Text
+  idempotencyKey    String? @unique
+
+  /// When Razorpay captured the money. This is the FIFO key for allocation —
+  /// not createdAt, which is when the customer opened the payment modal.
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items   OrderItem[]
+  refunds Refund[]
+
+  @@index([fulfilDay, paidAt])
+  @@index([userId, createdAt])
 }
 
 model OrderItem {
@@ -117,8 +232,120 @@ model OrderItem {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   name      String
-  price     Float
-  quantity  Float
+
+  /// Pinned from DayStock.pricePerKg at checkout.
+  pricePerKg Float
+  kg         Float
+  lineTotal  Float
+
+  /// What allocation actually gave this line. 0 until the catch is declared.
+  fulfilledKg    Float  @default(0)
+  refundedAmount Float  @default(0)
+  /// PENDING | FULL | PARTIAL | SHORT | CANCELLED
+  fulfilmentState String @default("PENDING")
+
+  /// Set the first time a short-fall push went out for this line, so a
+  /// re-declaration only notifies lines whose allocation actually dropped.
+  shortfallNotifiedAt DateTime?
+  /// PART_FILL | SUBSTITUTE | CANCEL — null until the customer answers.
+  customerChoice      String?
+  choiceAt            DateTime?
+  substituteProductId String?
+
+  refunds Refund[]
+
+  @@index([productId])
+  @@index([orderId])
+}
+
+/// Every refund, idempotent by construction. `@@unique([orderItemId, reason])`
+/// is what stops a retried job refunding the same short-fall twice; the
+/// Razorpay call carries `idempotencyKey` for the same reason one layer down.
+model Refund {
+  id          String     @id @default(cuid()) @map("_id")
+  orderId     String
+  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItemId String?
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+  /// SHORTFALL | CANCEL | ADMIN | PAYMENT_FAILED | SUBSTITUTE_DIFF
+  reason String
+  amount Float
+  /// PENDING | PROCESSED | FAILED
+  status String @default("PENDING")
+
+  razorpayRefundId String? @unique
+  idempotencyKey   String  @unique
+  error            String? @db.Text
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([orderItemId, reason])
+  @@index([orderId])
+  @@index([status])
+}
+
+/// FCM registration tokens. Pruned when FCM answers
+/// `registration-token-not-registered`.
+model PushDevice {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique @db.VarChar(512)
+  platform   String   @default("web")
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// "Notify me when this lands". Doubles as demand data for tomorrow's
+/// `planned` number.
+model CatchAlert {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category  String?
+  /// "p:<productId>" or "c:<category>". A plain @@unique over the two nullable
+  /// columns would not dedupe in MySQL, where every NULL is distinct.
+  targetKey String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, targetKey])
+  @@index([productId])
+  @@index([category])
+}
+
+/// Queued notification work. Rows are written in the SAME transaction as the
+/// declaration that caused them, so a push can never describe a catch that
+/// failed to save. A scheduled function drains them.
+model NotificationJob {
+  id     String @id @default(cuid()) @map("_id")
+  /// TRANSACTIONAL | MARKETING — the daily cap and quiet hours apply only to
+  /// MARKETING.
+  kind   String
+  /// CATCH_LANDED | ORDER_STATUS | SHORTFALL | PAYMENT_FAILED | REORDER |
+  /// ADMIN_UNDECLARED
+  topic  String
+  userId String?
+
+  payload   Json
+  /// Makes the drain idempotent, e.g. "ORDER_STATUS:<orderId>:Delivered".
+  dedupeKey String @unique @db.VarChar(191)
+
+  /// PENDING | SENT | FAILED | SKIPPED
+  status      String    @default("PENDING")
+  attempts    Int       @default(0)
+  scheduledAt DateTime  @default(now())
+  sentAt      DateTime?
+  error       String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@index([status, scheduledAt])
+  @@index([userId, kind, sentAt])
 }
 
 model Review {
@@ -135,4 +362,5 @@ model Review {
   updatedAt  DateTime @updatedAt
 
   @@unique([productId, userId])
+  @@index([userId])
 }

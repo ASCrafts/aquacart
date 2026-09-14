@@ -1,29 +1,21 @@
+import type { Metadata } from 'next';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
-import { Metadata } from 'next';
-import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Reset Password | AquaCart',
-  description: 'Set a new password for your AquaCart account',
+  description: 'Set a new password for your AquaCart account.',
 };
 
-// Fallback for the suspense boundary
-function ResetPasswordFallback() {
-  return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-aq-surface p-4">
-      <div className="w-full max-w-md aq-card-static p-8 text-center animate-pulse">
-        <div className="w-14 h-14 rounded-2xl bg-gray-200 mx-auto mb-4"></div>
-        <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Kept alive only for the links already out in the world.
+ *
+ * Resets now happen entirely on /forgot-password, where the SMS proof is passed
+ * to ResetPasswordForm in memory. Rendered here with no props, the form has no
+ * proof to work with and says so plainly — a stale `?token=...` link lands on
+ * an explanation and a way forward rather than a password box that would fail
+ * on submit. The old token is deliberately not read: it no longer means
+ * anything, and pretending to inspect it would only invite trusting it.
+ */
 export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={<ResetPasswordFallback />}>
-      <ResetPasswordForm />
-    </Suspense>
-  );
+  return <ResetPasswordForm />;
 }

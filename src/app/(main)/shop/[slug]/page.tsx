@@ -1,24 +1,18 @@
-import { getAllProducts, getProductBySlug } from '@/lib/products';
-import ProductDetailClient from './ProductDetailClient';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { getAllProducts, getProductBySlug, getProductPage } from '@/lib/products';
+import { deliverySlot, describeDelivery } from '@/lib/business-day';
+import { catalogMedians } from '@/lib/nutrition';
+import ProductDetailClient from './ProductDetailClient';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// Reads the cached catalog, so generateMetadata and the page below share one
-// lookup instead of paying two cross-region round trips per view.
-const getProduct = getProductBySlug;
-
 /**
- * Prerender every product page at build time and serve it from the CDN.
- * The catalog is small and public (no auth gate on this route, unlike /shop),
- * so these are plain static HTML — no database round trip on a cold visit.
- *
- * Freshness comes from the `products` cache tag: any write through
- * ProductModel calls revalidateTag, which rebuilds these pages too. A product
- * added after the build is still served — see dynamicParams below.
+ * Prerender every product's slug list at build time so Next knows the valid
+ * routes — but see `dynamic` below: the page body itself is never served from
+ * that build. The catalog is small and public, so this walk is cheap.
  */
 export async function generateStaticParams() {
   try {
@@ -26,24 +20,34 @@ export async function generateStaticParams() {
     return products.map((p) => ({ slug: p.slug }));
   } catch (error) {
     // CI builds run against a mock DATABASE_URL with no server behind it.
-    // Prerendering is an optimisation, not a requirement: return no params and
-    // every product page renders on demand instead (see dynamicParams below).
-    // A build that can reach the database still prerenders the whole catalog.
+    // Prerendering is an optimisation, not a requirement.
     console.warn(
-      '[build] Database unreachable — skipping product prerender, pages will render on demand.',
+      '[build] Database unreachable — skipping product param enumeration.',
       error instanceof Error ? error.message : error
     );
     return [];
   }
 }
 
-// A slug that did not exist at build time renders on demand rather than 404ing.
+// A slug that did not exist at build time still renders rather than 404ing.
 export const dynamicParams = true;
 
-// ===== Dynamic SEO & OpenGraph Metadata (SSR) =====
+/**
+ * Never statically served. A product page shows today's price, today's state
+ * and the 19:30 cutoff — all of it DayStock, none of it cacheable (see
+ * src/lib/products.ts). generateStaticParams above only tells Next which
+ * slugs exist; `force-dynamic` means every visit still re-reads
+ * `getProductPage()` fresh rather than a build-time snapshot that would go
+ * stale the moment the first order of the day is placed.
+ */
+export const dynamic = 'force-dynamic';
+
+// generateMetadata reads the cached catalog (name/description only, no price,
+// no stock) — SEO copy that is true for months, not seconds, so it is the one
+// thing on this page allowed to be stale between admin edits.
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const resolvedParams = await params;
-  const product = await getProduct(resolvedParams.slug);
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     return {
@@ -54,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${product.name} — Fresh Catch | AquaCart`,
-    description: `${product.description} Sourced sustainably and delivered fresh. Price: ₹${product.price.toFixed(2)}.`,
+    description: `${product.description} Sourced sustainably and delivered fresh. From ₹${product.basePricePerKg.toFixed(2)}/kg.`,
     openGraph: {
       title: `${product.name} — Premium Sustainable Seafood | AquaCart`,
       description: product.description,
@@ -79,12 +83,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  const resolvedParams = await params;
-  const product = await getProduct(resolvedParams.slug);
+  const { slug } = await params;
+  const now = new Date();
+  const entry = await getProductPage(slug, now);
 
-  if (!product) {
+  if (!entry) {
     notFound();
   }
 
-  return <ProductDetailClient product={product} />;
+  // The delivery window is derived server-side from the same elapsed-minutes
+  // clock that picks fulfilDay, so it can never disagree with what checkout
+  // actually books — see src/lib/business-day.ts.
+  const slot = deliverySlot(now);
+  const deliveryNote = describeDelivery(entry.stock.day, slot, now);
+
+  // Catalog-wide medians for the nutrition panel's "2× the catalog median"
+  // lines — cheap: getAllProducts() is the same tag-cached read the shop grid
+  // and generateStaticParams already use, so this costs nothing extra beyond
+  // the first fetch after a catalog edit.
+  const catalog = await getAllProducts();
+  const medians = catalogMedians(catalog.map((p) => p.nutrition));
+
+  return (
+    <ProductDetailClient entry={entry} deliveryNote={deliveryNote} medians={medians} />
+  );
 }
