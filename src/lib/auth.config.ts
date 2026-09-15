@@ -13,9 +13,9 @@ import { ROLES, SESSION_MAX_AGE_SECONDS } from './constants';
 const useSecureCookies = process.env.NODE_ENV === 'production';
 const securePrefix = useSecureCookies ? '__Secure-' : '';
 
-// NOTE: this must stay identical between src/lib/auth.ts and src/proxy.ts —
-// both construct NextAuth from this config, and a mismatch in cookie names
-// means the proxy cannot read the session the server just issued.
+// NOTE: src/proxy.ts reads the session with getToken() and names this cookie
+// itself (SESSION_COOKIE). Rename it here and it must change there too, or the
+// proxy cannot read the session the server just issued.
 const cookies = {
   sessionToken: {
     name: `${securePrefix}authjs.session-token`,

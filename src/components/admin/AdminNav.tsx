@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signOutToLogin } from '@/lib/sign-out-client';
 import { Fish, LogOut, Package, Settings2, Sparkles, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -59,7 +59,7 @@ export default function AdminNav() {
             </Link>
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: '/login' })}
+              onClick={() => void signOutToLogin()}
               className="touch-target inline-flex items-center justify-center rounded-full text-aq-on-surface-variant transition-colors hover:bg-aq-error-container hover:text-aq-error"
               aria-label="Sign out"
             >

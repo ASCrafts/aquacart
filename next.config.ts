@@ -9,6 +9,9 @@ const pwaConfig = withPWA({
   // ServiceWorkerUpdater unregisters any previously installed SW in dev.
   disable: process.env.NODE_ENV === 'development',
   register: true,
+  // When a page navigation genuinely fails (dead mobile signal), serve a real
+  // "you're offline" page instead of the worker's rejected `no-response`.
+  fallbacks: { document: '/offline' },
   // next-pwa defaults this to true, which installs
   // `window.addEventListener('online', () => location.reload())`.
   // Mobile browsers fire `online` whenever connectivity is re-evaluated —

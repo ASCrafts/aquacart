@@ -62,6 +62,36 @@ function backoffDelayMs(attempt: number): number {
   return exp / 2 + Math.random() * (exp / 2);
 }
 
+/** How often to pull the orders API when there is no socket to listen on. */
+const POLL_MS = 30_000;
+
+const LOCAL_HOSTS = ['localhost', '127.0.0.1'];
+
+/**
+ * Can this page actually open that socket?
+ *
+ * A `ws://localhost` URL in a deployed https build is the case this exists
+ * for: the browser blocks it (mixed content + CSP) and every phone is not the
+ * machine running the socket server, so trying only fills the console.
+ */
+function socketUsable(raw: string | undefined): raw is string {
+  if (!raw) return false;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'ws:' && url.protocol !== 'wss:') return false;
+    // Mirrors websocketOrigin() in next.config.ts: a production build's CSP
+    // only ever allows a wss:// origin, so a ws:// attempt is guaranteed to
+    // be blocked — skip it rather than log a violation per reconnect.
+    if (process.env.NODE_ENV === 'production' && url.protocol !== 'wss:') return false;
+    if (LOCAL_HOSTS.includes(url.hostname) && !LOCAL_HOSTS.includes(window.location.hostname)) {
+      return false;
+    }
+    return !(window.location.protocol === 'https:' && url.protocol !== 'wss:');
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Last-seen-order-id, persisted
 // ---------------------------------------------------------------------------
@@ -88,7 +118,7 @@ function writeLastSeenId(id: string): void {
 // Feed types
 // ---------------------------------------------------------------------------
 
-type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'polling';
 
 interface OrderFeedItem {
   id: string;
@@ -296,10 +326,17 @@ export default function AdminDashboard() {
     }
 
     const wsUrl = process.env.NEXT_PUBLIC_WSS_URL;
-    if (!wsUrl) {
-      console.error('NEXT_PUBLIC_WSS_URL is not defined');
-      setConnection('disconnected');
-      return;
+    if (!socketUsable(wsUrl)) {
+      // No socket this page can reach: unset, or a dev `ws://localhost` URL
+      // baked into a public https build (Netlify runs no socket server, and
+      // the CSP blocks it anyway). Poll the orders API instead — slower, but
+      // it is the same catch-up path a reconnect uses, so nothing is missed.
+      setConnection('polling');
+      void syncSince(false);
+      const poll = setInterval(() => {
+        if (document.visibilityState === 'visible') void syncSince(false);
+      }, POLL_MS);
+      return () => clearInterval(poll);
     }
 
     let cancelled = false;
@@ -321,6 +358,9 @@ export default function AdminDashboard() {
       attempt += 1;
       setReconnectAttempt(attempt);
       setConnection('reconnecting');
+      // While the socket stays down, each retry (backoff capped at ~30s) also
+      // pulls the orders API, so the feed keeps filling as a slow poll.
+      if (attempt >= 3) void syncSince(false);
       clearReconnectTimer();
       reconnectTimer = setTimeout(connect, delay);
     };
@@ -451,6 +491,7 @@ export default function AdminDashboard() {
       className: 'text-amber-600',
     },
     disconnected: { icon: WifiOff, label: 'Offline', className: 'text-aq-error' },
+    polling: { icon: Clock, label: 'Refreshing every 30s', className: 'text-aq-on-surface-variant' },
   };
   const status = statusMeta[connection];
   const StatusIcon = status.icon;

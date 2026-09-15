@@ -82,8 +82,12 @@ export default {
       },
 
       fontFamily: {
-        display: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        // next/font registers Inter under a hashed family name exposed as
+        // --font-inter. A literal 'Inter' never matches it, so the preloaded
+        // font went unused (the console's "preloaded but not used" warning)
+        // and pages rendered in the system font.
+        display: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
       },
 
       borderRadius: {

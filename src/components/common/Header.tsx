@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { signOutToLogin } from '@/lib/sign-out-client';
 import { Crown, LayoutGrid, LogIn, LogOut, Search, ShoppingCart, User, Waves, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ROLES } from '@/lib/constants';
@@ -69,9 +70,7 @@ export default function Header() {
     }
   }, [searchQuery, allProducts]);
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' });
-  };
+  const handleSignOut = () => signOutToLogin();
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
 
